@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute", "mic_mute\mic_mute.vcproj", "{6BA80759-8BA0-4EF6-9D27-99807E231C98}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "key_hook", "key_hook\key_hook.vcproj", "{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6BA80759-8BA0-4EF6-9D27-99807E231C98}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6BA80759-8BA0-4EF6-9D27-99807E231C98}.Debug|Win32.Build.0 = Debug|Win32
+		{6BA80759-8BA0-4EF6-9D27-99807E231C98}.Release|Win32.ActiveCfg = Release|Win32
+		{6BA80759-8BA0-4EF6-9D27-99807E231C98}.Release|Win32.Build.0 = Release|Win32
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Debug|Win32.Build.0 = Debug|Win32
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Release|Win32.ActiveCfg = Release|Win32
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
