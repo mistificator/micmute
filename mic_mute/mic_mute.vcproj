@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Winmm.lib "
+				AdditionalDependencies="Winmm.lib strsafe.lib"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -134,7 +134,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Winmm.lib"
+				AdditionalDependencies="Winmm.lib strsafe.lib"
 				LinkIncremental="1"
 				GenerateManifest="true"
 				ManifestFile="$(IntDir)\$(TargetFileName).intermediate.manifest"
@@ -238,6 +238,10 @@
 			</File>
 			<File
 				RelativePath=".\mic_mute.rc"
+				>
+			</File>
+			<File
+				RelativePath=".\shortcut.ICO"
 				>
 			</File>
 			<File

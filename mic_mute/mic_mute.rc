@@ -1,7 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
-#include "version.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -30,8 +29,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION GLOBAL_VERSION_MAJOR,GLOBAL_VERSION_MINOR,GLOBAL_VERSION_SUB,0
- PRODUCTVERSION GLOBAL_VERSION_MAJOR,GLOBAL_VERSION_MINOR,GLOBAL_VERSION_SUB,0
+ FILEVERSION 0,1,2,0
+ PRODUCTVERSION 0,1,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -48,13 +47,13 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "CompanyName", "Mist Poryvaev"
-            VALUE "FileDescription", GLOBAL_PRODUCT_NAME
-            VALUE "FileVersion", GLOBAL_VERSION
-            VALUE "InternalName", GLOBAL_PRODUCT_NAME
+            VALUE "FileDescription", "MicMute"
+            VALUE "FileVersion", "MicMute 0.1.2"
+            VALUE "InternalName", "MicMute"
             VALUE "LegalCopyright", "© 2010 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
-            VALUE "ProductName", GLOBAL_PRODUCT_NAME
-            VALUE "ProductVersion", GLOBAL_VERSION
+            VALUE "ProductName", "MicMute"
+            VALUE "ProductVersion", "MicMute 0.1.2"
         END
     END
     BLOCK "VarFileInfo"
@@ -81,7 +80,7 @@ LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 // RT_MANIFEST
 //
 
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST             "mic_mute.exe.manifest"
+1                       RT_MANIFEST             "mic_mute.exe.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -92,6 +91,7 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST             "mic_mute.exe.manifes
 // remains consistent on all systems.
 IDI_MIC_MUTE            ICON                    "mic_mute.ico"
 IDI_SMALL               ICON                    "small.ico"
+IDI_SHORTCUT            ICON                    "shortcut.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -106,11 +106,29 @@ BEGIN
     END
     POPUP "Options"
     BEGIN
-        MENUITEM "Microphone Mute (R.Win + Ctrl)", IDM_MUTE
+        MENUITEM "Microphone mute",             IDM_MUTE
+        MENUITEM SEPARATOR
+        MENUITEM "Hide MicMute",                IDM_HIDE_MICMUTE
+        MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
+        MENUITEM "Start muted",					IDM_START_MUTED
     END
     POPUP "&Help"
     BEGIN
         MENUITEM "&About ...",                  IDM_ABOUT
+    END
+END
+
+IDC_TRAY_MIC_MUTE MENU 
+BEGIN
+    POPUP "Tray Menu"
+    BEGIN
+        MENUITEM "Microphone mute",             IDM_MUTE
+        MENUITEM SEPARATOR
+        MENUITEM "Show MicMute",                IDM_SHOW_MICMUTE
+        MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
+        MENUITEM "Start muted",					IDM_START_MUTED
+        MENUITEM "&About ...",                  IDM_ABOUT
+        MENUITEM "Exit",                        IDM_EXIT
     END
 END
 
@@ -137,10 +155,21 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.1",IDC_STATIC,49,10,119,8,SS_NOPREFIX
+    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,32,32
+    LTEXT           "MicMute 0.1.2",IDC_STATIC,49,10,119,8,SS_NOPREFIX
     LTEXT           "Copyright (C) 2010 Mist Poryvaev",IDC_STATIC,49,20,119,8
     DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
+END
+
+IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 199, 41
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Setup shortcut"
+FONT 10, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
+    LTEXT           "Press one or two keys",IDC_STATIC,49,10,112,8,SS_NOPREFIX
+    DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
+    EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
 END
 
 
