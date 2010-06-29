@@ -2,10 +2,10 @@
 // Microsoft Visual C++ generated include file.
 // Used by mic_mute.rc
 //
-#define GLOBAL_VERSION_MAJOR            0
-#define GLOBAL_VERSION_MINOR            1
+
+#include "version.h"
+
 #define IDC_MYICON                      2
-#define GLOBAL_VERSION_SUB              2
 #define IDD_MIC_MUTE_DIALOG             102
 #define IDS_APP_TITLE                   103
 #define IDD_ABOUTBOX                    103
