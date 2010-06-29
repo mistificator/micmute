@@ -23,6 +23,10 @@ DWORD SavedVolume = 0;
 UINT TrayMsg;
 HMENU TrayMenu;
 
+HMENU DevicesMenu;
+#define DEVICE_FIRST_ID 50000
+#define DEVICE_LAST_ID 50999
+
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
@@ -40,6 +44,7 @@ HANDLE StopEvent = 0;
 HANDLE Thread = 0;
 HWND AppHWnd = 0;
 BOOL StartMuted = FALSE;
+UINT SelectedDevice = 0;
 
 DWORD WINAPI ThreadProc( LPVOID lpParam ) 
 {
@@ -92,8 +97,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	_stscanf(_str, _T("%i"), &_key2);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, _ini);
 	_stscanf(_str, _T("%i"), &_start_muted);
-	StartMuted = (_start_muted != 0);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, _ini);
+	_stscanf(_str, _T("%i"), &SelectedDevice);
 
+
+	StartMuted = (_start_muted != 0);
 	SetShortcut(_count, _key1, _key2);
 
 	// Initialize global strings
@@ -136,9 +144,37 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MIC_MUTE));
 
+	MENUITEMINFO mii;
+	DevicesMenu = CreateMenu();
+	for (UINT _idx = 0; _idx < CMixer::DevCount(); _idx++)
+	{
+		MIXERCAPS _caps;
+		if FAILED(CMixer::GetCaps(_idx, &_caps)) continue;
+		mii.cbSize = sizeof(MENUITEMINFO);
+		mii.fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE;
+		mii.fType = MFT_RADIOCHECK | MFT_STRING;
+		mii.wID = DEVICE_FIRST_ID + _idx;
+		mii.dwTypeData = new TCHAR[sizeof(_caps.szPname)];
+		mii.hbmpChecked = NULL;
+		StringCchLength(mii.dwTypeData, sizeof(_caps.szPname), &mii.cch);
+		StringCchCopy(mii.dwTypeData, sizeof(_caps.szPname) / sizeof(TCHAR), _caps.szPname);
+		InsertMenuItem(DevicesMenu, _idx, TRUE, &mii);
+	}
+
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
 	TrayMenu = GetSubMenu(hmenu, 0);
 	SetMenuDefaultItem(TrayMenu, IDM_SHOW_MICMUTE, 0);
+
+	mii.cbSize = sizeof(MENUITEMINFO);
+	mii.fMask = MIIM_SUBMENU | MIIM_STRING;
+	mii.fType = MFT_STRING;
+	mii.hSubMenu = DevicesMenu;
+	static const TCHAR _devices_item[] = _T("Devices");
+	mii.dwTypeData = (LPTSTR)_devices_item;
+	mii.cch = sizeof(_devices_item) / sizeof(TCHAR);
+	InsertMenuItem(GetMenu(AppHWnd), 2, TRUE, &mii);
+	InsertMenuItem(TrayMenu, 3, TRUE, &mii);
+	CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, SelectedDevice + DEVICE_FIRST_ID, MF_BYCOMMAND);
 
 	if (StartMuted != 0)
 	{
@@ -166,6 +202,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _str, _ini);
 	_stprintf(_str, _T("%i"), _start_muted);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _str, _ini);
+	_stprintf(_str, _T("%i"), SelectedDevice);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, _ini);
 
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 
@@ -366,6 +404,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		wmId    = LOWORD(wParam);
 		wmEvent = HIWORD(wParam);
 		// Parse the menu selections:
+		if ((wmId >= DEVICE_FIRST_ID) && (wmId <= DEVICE_LAST_ID))
+		{
+			CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, wmId, MF_BYCOMMAND);
+			SelectedDevice = wmId - DEVICE_FIRST_ID;
+			mixer_mic_in.SelectDevice(SelectedDevice);
+		}
 		switch (wmId)
 		{
 		case IDM_ABOUT:
