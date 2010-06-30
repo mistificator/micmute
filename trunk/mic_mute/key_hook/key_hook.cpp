@@ -3,20 +3,27 @@
 
 #include "stdafx.h"
 
-
 #ifdef _MANAGED
 #pragma managed(push, off)
 #endif
 
 static HANDLE Event = 0;
 
+#define KEY_WAS_UP ((lParam & (1 << 30)) == 0)
+#define KEY_WAS_DOWN ((lParam & (1 << 30)) == (1 << 30))
+#define KEY_BEING_PRESSED ((lParam & (1 << 31)) == 0)
+#define KEY_BEING_RELEASED ((lParam & (1 << 31)) == (1 << 31))
+#define KEY_REPEAT_COUNT (lParam & 0xffff)
+#define KEY_IS_ALT ((lParam & (1 << 29)) == (1 << 29))
+
 struct KeyHook_Struct
 {
-	WPARAM PrevCode;
+	WPARAM prev_code;
 	int keys_count;
 	int key1;
 	int key2;
 	BOOL enabled;
+	int mic_mode;
 };
 
 KeyHook_Struct * kstruct;
@@ -26,16 +33,24 @@ extern "C"
 {
 	__declspec(dllexport) LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
-		if (kstruct->enabled && (nCode >= 0) && ((lParam & (1 << 30)) == 0))
+		if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_STANDART) && (nCode >= 0) && KEY_WAS_UP)
 		{
-			if (((kstruct->PrevCode == kstruct->key1) && (wParam == kstruct->key2) && (kstruct->keys_count == 2)) || ((wParam == kstruct->key1) && (kstruct->keys_count == 1))) 
+			if (((kstruct->prev_code == kstruct->key1) && (wParam == kstruct->key2) && (kstruct->keys_count == 2)) || ((wParam == kstruct->key1) && (kstruct->keys_count == 1))) 
 			{
 				SetEvent(Event);
-				kstruct->PrevCode = 0;
+				kstruct->prev_code = 0;
 			}
 			else
 			{
-				kstruct->PrevCode = wParam;
+				kstruct->prev_code = wParam;
+			}
+		}
+		if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_TRANSMITTER) && (nCode >= 0) && (kstruct->keys_count == 1))
+		{
+			if ((wParam == kstruct->key1) && ((KEY_BEING_PRESSED && KEY_WAS_UP) || (KEY_BEING_RELEASED && KEY_WAS_DOWN)))
+			{
+				SetEvent(Event);
+				kstruct->prev_code = 0;
 			}
 		}
 		return CallNextHookEx(0, nCode, wParam,lParam);
@@ -65,6 +80,10 @@ extern "C"
 	{
 		kstruct->enabled = _state;
 	}
+	__declspec(dllexport) void __stdcall SetMode(int _mode)
+	{
+		kstruct->mic_mode = _mode;
+	}
 };
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -84,11 +103,20 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 			sizeof(KeyHook_Struct),                // buffer size  
 			_T("KeyHook_Struct!"));                 // name of mapping object
 
+		bool _init_struct = (GetLastError() != ERROR_ALREADY_EXISTS);
+
 		kstruct = (KeyHook_Struct *)MapViewOfFile(map_handle,   // handle to map object
 			FILE_MAP_ALL_ACCESS, // read/write permission
 			0,                   
 			0,                   
-			sizeof(KeyHook_Struct));   
+			sizeof(KeyHook_Struct));
+
+		if (_init_struct)
+		{
+			ZeroMemory(kstruct, sizeof(KeyHook_Struct));
+			kstruct->enabled = true;
+//			MessageBox(0, _T("key_hook!"), _T(""), MB_OK);
+		}
 	}
 	if (ul_reason_for_call == DLL_PROCESS_DETACH)
 	{

@@ -24,6 +24,7 @@
 #define IDM_SETUP_SHORTCUT              32775
 #define IDC_SHORTCUT                    32776
 #define IDM_START_MUTED                 32777
+#define IDM_TRANSMITTER_MODE			32778
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
