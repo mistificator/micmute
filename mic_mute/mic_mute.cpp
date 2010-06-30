@@ -6,12 +6,12 @@
 #include "ShellAPI.h"
 #include "./../key_hook/key_hook.h"
 #include "strsafe.h"
+#include "shlobj.h"
 
 _SetShortCut	SetShortcut;
 _SetEnabled		SetEnabled;
 _GetShortCut	GetShortcut;
-
-TCHAR _ini[] = _T(".\\mic_mute.ini");
+_SetMode		SetMode;
 
 #define MAX_LOADSTRING 100
 
@@ -36,6 +36,7 @@ INT_PTR CALLBACK	SetupShortcut(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	ShortcutEditProc(HWND, UINT, WPARAM, LPARAM);
 VOID				MuteToggle(HWND hWnd);
 VOID				StartMutedToggle(HWND hWnd);
+VOID				TransmitterToggle(HWND hWnd);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
@@ -45,6 +46,9 @@ HANDLE Thread = 0;
 HWND AppHWnd = 0;
 BOOL StartMuted = FALSE;
 UINT SelectedDevice = 0;
+HANDLE SingleControl = 0;
+int MicMode = MIC_MODE_STANDART;
+bool IsMuted = false;
 
 DWORD WINAPI ThreadProc( LPVOID lpParam ) 
 {
@@ -73,6 +77,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
  	// TODO: Place code here.
+
+	SingleControl = CreateMutex(NULL, FALSE, _T("SingleControl!"));
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		CloseHandle(SingleControl);
+		return 0;
+	}
+
 	MSG msg;
 	HACCEL hAccelTable;
 	HOOKPROC hkprc; 
@@ -84,21 +96,34 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	SetShortcut = (_SetShortCut)GetProcAddress(hinstDLL, "_SetShortcut@12");
 	GetShortcut = (_GetShortCut)GetProcAddress(hinstDLL, "_GetShortcut@12");
 	SetEnabled = (_SetEnabled)GetProcAddress(hinstDLL, "_SetEnabled@4");
+	SetMode = (_SetMode)GetProcAddress(hinstDLL, "_SetMode@4");
 	hhook = SetWindowsHookEx(WH_KEYBOARD,hkprc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
+	TCHAR szPath[MAX_PATH];
+	SHGetFolderPath(NULL, 
+		CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+		NULL, 
+		0, 
+		szPath); 
+	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
+	CreateDirectory(szPath, NULL);
+	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
+
 	TCHAR _str[1024];
 	int _count, _key1, _key2, _start_muted;
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, _ini);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_count);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, _ini);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_key1);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("17"), _str, 1024, _ini);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("17"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_key2);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, _ini);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_start_muted);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, _ini);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &SelectedDevice);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &MicMode);
 
 
 	StartMuted = (_start_muted != 0);
@@ -182,6 +207,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		MuteToggle(AppHWnd);
 	}
 
+	if (MicMode == MIC_MODE_TRANSMITTER)
+	{
+		TransmitterToggle(AppHWnd);
+	}
+
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
@@ -195,15 +225,17 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	_start_muted = (StartMuted == TRUE) ? 1 : 0;
 	GetShortcut(&_count, &_key1, &_key2);
 	_stprintf(_str, _T("%i"), _count);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _str, _ini);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _str, szPath);
 	_stprintf(_str, _T("%i"), _key1);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _str, _ini);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _str, szPath);
 	_stprintf(_str, _T("%i"), _key2);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _str, _ini);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _str, szPath);
 	_stprintf(_str, _T("%i"), _start_muted);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _str, _ini);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _str, szPath);
 	_stprintf(_str, _T("%i"), SelectedDevice);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, _ini);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, szPath);
+	_stprintf(_str, _T("%i"), MicMode);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _str, szPath);
 
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 
@@ -214,6 +246,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CloseHandle(HookEvent);
 	UnhookWindowsHookEx(hhook);
 	FreeLibrary(hinstDLL);
+
+	CloseHandle(SingleControl);
 
 	return (int) msg.wParam;
 }
@@ -314,6 +348,7 @@ VOID MuteToggle(HWND hWnd)
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		CheckMenuItem(menu, IDM_MUTE, mute_state = MF_CHECKED);
 		flash.dwFlags = FLASHW_TRAY;
+		IsMuted = true;
 	}
 	else 
 	{
@@ -324,6 +359,7 @@ VOID MuteToggle(HWND hWnd)
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		mute_state = MF_UNCHECKED;
 		flash.dwFlags = FLASHW_STOP;
+		IsMuted = false;
 	}
 	CheckMenuItem(TrayMenu, IDM_MUTE, mute_state);
 
@@ -361,6 +397,48 @@ VOID StartMutedToggle(HWND hWnd)
 	CheckMenuItem(TrayMenu, IDM_START_MUTED, mute_state);	
 }
 
+VOID ShowTransmitterModeWarning(HWND hWnd)
+{
+	MessageBox(hWnd, _T("Keyboard shortcut must consist of only one key for transmitter mode.\nUse \"Setup shortcut\" menu item to change shortcut."), _T("MicMute information"), MB_OK | MB_ICONINFORMATION);
+}
+
+VOID TransmitterToggle(HWND hWnd)
+{
+	DWORD trns_state;
+	HMENU menu = GetMenu(hWnd);
+	trns_state = CheckMenuItem(menu, IDM_TRANSMITTER_MODE, MF_UNCHECKED);
+	if (trns_state == MF_UNCHECKED)
+	{
+		int _count, _key1, _key2;
+		GetShortcut(&_count, &_key1, &_key2);
+		if (_count != 1)
+		{
+			ShowTransmitterModeWarning(hWnd);
+			return;
+		}
+		CheckMenuItem(menu, IDM_TRANSMITTER_MODE, trns_state = MF_CHECKED);
+		MicMode = MIC_MODE_TRANSMITTER;
+		EnableMenuItem(menu, IDM_MUTE, MF_BYCOMMAND | MF_GRAYED);
+		EnableMenuItem(TrayMenu, IDM_MUTE, MF_BYCOMMAND | MF_GRAYED);
+		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
+		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
+		if (IsMuted == false)
+		{
+			MuteToggle(hWnd);
+		}
+	}
+	else
+	{
+		trns_state = MF_UNCHECKED;
+		MicMode = MIC_MODE_STANDART;
+		EnableMenuItem(menu, IDM_MUTE, MF_BYCOMMAND | MF_ENABLED);
+		EnableMenuItem(TrayMenu, IDM_MUTE, MF_BYCOMMAND | MF_ENABLED);
+		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
+		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
+	}
+	CheckMenuItem(TrayMenu, IDM_TRANSMITTER_MODE, trns_state);	
+	SetMode(MicMode);
+}
 
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -388,15 +466,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			ShowWindow(hWnd, SW_SHOWNORMAL);
 			break;
 		case WM_RBUTTONDOWN:
-			SetForegroundWindow(hWnd);
 			GetCursorPos(&pt);
+			SetForegroundWindow(hWnd);
 			TrackPopupMenu(TrayMenu, 
 				TPM_LEFTALIGN, 
 				pt.x, pt.y, 0, hWnd, NULL); 
 			PostMessage(hWnd, WM_NULL, 0, 0);
 			break;
 		}
-		return 0;
+		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	switch (message)
 	{
@@ -423,6 +501,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_START_MUTED:
 			StartMutedToggle(hWnd);
+			break;
+		case IDM_TRANSMITTER_MODE:
+			TransmitterToggle(hWnd);
 			break;
 		case IDM_SHOW_MICMUTE:
 			ShowWindow(hWnd, SW_SHOWNORMAL);
@@ -492,7 +573,7 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		SetFocus(GetDlgItem(hDlg, IDC_SHORTCUT));
 		break;
 	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		if ((LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL))
 		{
 			EndDialog(hDlg, LOWORD(wParam));
 			SetEnabled(true);
@@ -500,6 +581,7 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		}
 		break;
 	}
+
 	return (INT_PTR)FALSE;
 }
 
@@ -517,7 +599,7 @@ TCHAR * KeyToName(UINT _code)
 
 	case VK_SHIFT: return _T("Shift");
 	case VK_CONTROL: return _T("Ctrl");
-	case VK_MENU: return _T("Menu");
+	case VK_MENU: return _T("Alt");
 	case VK_PAUSE: return _T("Pause");
 	case VK_CAPITAL: return _T("Caps");
 
@@ -621,6 +703,7 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 			_prev_code = 0;
 		}
 		break;
+	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 		_code = (UINT)wParam;
 		if ((_prev_code == 0) || (_prev_code == _code))
@@ -629,7 +712,7 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 			StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
 			SetShortcut(1, _code, 0);
 		}
-		else
+		else 
 		{
 			StringCchCopy(_key1, 32, KeyToName(_prev_code));
 			StringCchCopy(_key2, 32, KeyToName(_code));
@@ -638,6 +721,11 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		}
 		SetWindowText(hEdit, _str);
 		_prev_code = _code;
+		switch (_code)
+		{
+			case VK_MENU:
+				return 0;
+		}
 		break;
 	}
 	return CallWindowProc(_edit_proc, hEdit, message, wParam, lParam);
