@@ -16,14 +16,19 @@ _SetMode		SetMode;
 #define MAX_LOADSTRING 100
 
 // Global Variables:
-HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING];			// the main window class name
+HINSTANCE hInst = NULL;								// current instance
+TCHAR szTitle[MAX_LOADSTRING] = _T("");					// The title bar text
+TCHAR szWindowClass[MAX_LOADSTRING] = _T("");			// the main window class name
 DWORD SavedVolume = 0;
-UINT TrayMsg;
-HMENU TrayMenu;
+UINT TrayMsg = 0;
+HMENU TrayMenu = NULL;
+INT ShowNotifications = 0;
+INT SoundSignal = 0;
 
-HMENU DevicesMenu;
+WNDPROC edit_proc = NULL;
+UINT prev_code = 0;
+
+HMENU DevicesMenu = NULL;
 #define DEVICE_FIRST_ID 50000
 #define DEVICE_LAST_ID 50999
 
@@ -37,16 +42,18 @@ LRESULT CALLBACK	ShortcutEditProc(HWND, UINT, WPARAM, LPARAM);
 VOID				MuteToggle(HWND hWnd);
 VOID				StartMutedToggle(HWND hWnd);
 VOID				TransmitterToggle(HWND hWnd);
+VOID				ShowNotificationsToggle(HWND hWnd);
+VOID				SoundSignalToggle(HWND hWnd);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
-HANDLE HookEvent = 0;
-HANDLE StopEvent = 0;
-HANDLE Thread = 0;
-HWND AppHWnd = 0;
+HANDLE HookEvent = NULL;
+HANDLE StopEvent = NULL;
+HANDLE Thread = NULL;
+HWND AppHWnd = NULL;
 BOOL StartMuted = FALSE;
 UINT SelectedDevice = 0;
-HANDLE SingleControl = 0;
+HANDLE SingleControl = NULL;
 int MicMode = MIC_MODE_STANDART;
 bool IsMuted = false;
 
@@ -124,6 +131,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	_stscanf(_str, _T("%i"), &SelectedDevice);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &MicMode);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &ShowNotifications);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _T("1"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &SoundSignal);
 
 
 	StartMuted = (_start_muted != 0);
@@ -152,14 +163,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	TrayMsg = RegisterWindowMessage(_T("Tray!"));
 
 	NOTIFYICONDATA nid;
+	ZeroMemory(&nid, sizeof(nid));
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
 	nid.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
-	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_INFO;
+	nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	nid.uCallbackMessage = TrayMsg;
 	nid.uTimeout = 5000;
-	nid.dwInfoFlags = NIIF_USER | NIIF_NOSOUND;
+	nid.dwInfoFlags = NIIF_NOSOUND;
+	if (ShowNotifications)
+	{
+		nid.uFlags |= NIF_INFO;
+		nid.dwInfoFlags |= NIIF_USER;
+	}
 	TCHAR _tip[] = L"MicMute";
 	StringCchCopy(nid.szTip, 128, _tip);
 	StringCchCopy(nid.szInfoTitle, 64, _tip);
@@ -200,11 +217,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	InsertMenuItem(GetMenu(AppHWnd), 2, TRUE, &mii);
 	InsertMenuItem(TrayMenu, 3, TRUE, &mii);
 	CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, SelectedDevice + DEVICE_FIRST_ID, MF_BYCOMMAND);
+	
+	mixer_mic_in.SelectDevice(SelectedDevice);
 
-	if (StartMuted != 0)
+	if (StartMuted)
 	{
 		StartMutedToggle(AppHWnd);
 		MuteToggle(AppHWnd);
+	}
+
+	if (ShowNotifications)
+	{
+		ShowNotificationsToggle(AppHWnd);
+	}
+
+	if (SoundSignal)
+	{
+		SoundSignalToggle(AppHWnd);
 	}
 
 	if (MicMode == MIC_MODE_TRANSMITTER)
@@ -236,6 +265,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, szPath);
 	_stprintf(_str, _T("%i"), MicMode);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _str, szPath);
+	_stprintf(_str, _T("%i"), ShowNotifications);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _str, szPath);
+	_stprintf(_str, _T("%i"), SoundSignal);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
+
+	mixer_mic_in.SetVolume(SavedVolume); 
 
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 
@@ -326,9 +361,14 @@ VOID MuteToggle(HWND hWnd)
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
-	nid.uFlags = NIF_TIP | NIF_INFO;
+	nid.uFlags = NIF_TIP;
 	nid.uTimeout = 5000;
-	nid.dwInfoFlags = NIIF_USER | NIIF_NOSOUND;
+	nid.dwInfoFlags = NIIF_NOSOUND;
+	if (ShowNotifications)
+	{
+		nid.uFlags |= NIF_INFO;
+		nid.dwInfoFlags |= NIIF_USER;
+	}
 	TCHAR _tooltip_title[] = _T("MicMute");
 	StringCchCopy(nid.szInfoTitle, 64, _tooltip_title);
 
@@ -349,6 +389,10 @@ VOID MuteToggle(HWND hWnd)
 		CheckMenuItem(menu, IDM_MUTE, mute_state = MF_CHECKED);
 		flash.dwFlags = FLASHW_TRAY;
 		IsMuted = true;
+		if (SoundSignal)
+		{
+			Beep(300, 250);
+		}
 	}
 	else 
 	{
@@ -360,6 +404,10 @@ VOID MuteToggle(HWND hWnd)
 		mute_state = MF_UNCHECKED;
 		flash.dwFlags = FLASHW_STOP;
 		IsMuted = false;
+		if (SoundSignal)
+		{
+			Beep(750, 250);
+		}
 	}
 	CheckMenuItem(TrayMenu, IDM_MUTE, mute_state);
 
@@ -381,20 +429,56 @@ VOID MuteToggle(HWND hWnd)
 
 VOID StartMutedToggle(HWND hWnd)
 {
-	DWORD mute_state;
+	DWORD _mute_state = 0;
 	HMENU menu = GetMenu(hWnd);
-	mute_state = CheckMenuItem(menu, IDM_START_MUTED, MF_UNCHECKED);
-	if (mute_state == MF_UNCHECKED)
+	_mute_state = CheckMenuItem(menu, IDM_START_MUTED, MF_UNCHECKED);
+	if (_mute_state == MF_UNCHECKED)
 	{
-		CheckMenuItem(menu, IDM_START_MUTED, mute_state = MF_CHECKED);
+		CheckMenuItem(menu, IDM_START_MUTED, _mute_state = MF_CHECKED);
 		StartMuted = TRUE;
 	}
 	else
 	{
-		mute_state = MF_UNCHECKED;
+		_mute_state = MF_UNCHECKED;
 		StartMuted = FALSE;
 	}
-	CheckMenuItem(TrayMenu, IDM_START_MUTED, mute_state);	
+	CheckMenuItem(TrayMenu, IDM_START_MUTED, _mute_state);	
+}
+
+VOID ShowNotificationsToggle(HWND hWnd)
+{
+	DWORD _show_state = 0;
+	HMENU menu = GetMenu(hWnd);
+	_show_state = CheckMenuItem(menu, IDM_SHOW_NOTIFICATIONS, MF_UNCHECKED);
+	if (_show_state == MF_UNCHECKED)
+	{
+		CheckMenuItem(menu, IDM_SHOW_NOTIFICATIONS, _show_state = MF_CHECKED);
+		ShowNotifications = TRUE;
+	}
+	else
+	{
+		_show_state = MF_UNCHECKED;
+		ShowNotifications = FALSE;
+	}
+	CheckMenuItem(TrayMenu, IDM_SHOW_NOTIFICATIONS, _show_state);	
+}
+
+VOID SoundSignalToggle(HWND hWnd)
+{
+	DWORD _sound_state = 0;
+	HMENU menu = GetMenu(hWnd);
+	_sound_state = CheckMenuItem(menu, IDM_SOUND_SIGNAL, MF_UNCHECKED);
+	if (_sound_state == MF_UNCHECKED)
+	{
+		CheckMenuItem(menu, IDM_SOUND_SIGNAL, _sound_state = MF_CHECKED);
+		SoundSignal = TRUE;
+	}
+	else
+	{
+		_sound_state = MF_UNCHECKED;
+		SoundSignal = FALSE;
+	}
+	CheckMenuItem(TrayMenu, IDM_SOUND_SIGNAL, _sound_state);	
 }
 
 VOID ShowTransmitterModeWarning(HWND hWnd)
@@ -502,6 +586,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_START_MUTED:
 			StartMutedToggle(hWnd);
 			break;
+		case IDM_SHOW_NOTIFICATIONS:
+			ShowNotificationsToggle(hWnd);
+			break;
+		case IDM_SOUND_SIGNAL:
+			SoundSignalToggle(hWnd);
+			break;
 		case IDM_TRANSMITTER_MODE:
 			TransmitterToggle(hWnd);
 			break;
@@ -557,16 +647,14 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-WNDPROC _edit_proc = 0;
-UINT _prev_code;
 INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
+{	
 	switch (message)
 	{
 	case WM_INITDIALOG:
 		SetEnabled(false);
-		_prev_code = 0;
-		_edit_proc = (WNDPROC)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
+		prev_code = 0;
+		edit_proc = (WNDPROC)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
 		SetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC, (LONG_PTR)ShortcutEditProc);
 		return (INT_PTR)TRUE;
 	case WM_SHOWWINDOW:
@@ -678,35 +766,35 @@ TCHAR * KeyToName(UINT _code)
 
 LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UINT _code;
-	static TCHAR _str[1024];
-	TCHAR _key1[32], _key2[32];
-	UINT _count;
+	UINT _code = 0;
+	static TCHAR _str[1024] = _T("");
+	TCHAR _key1[32] = _T(""), _key2[32] = _T("");
+	UINT _count = 0;
 	switch (message)
 	{
 	case WM_PAINT:
-		if (_prev_code == 0)
+		if (prev_code == 0)
 		{
-			GetShortcut((int *)&_count, (int *)&_prev_code, (int *)&_code);
+			GetShortcut((int *)&_count, (int *)&prev_code, (int *)&_code);
 			if (_count == 1)
 			{
-				StringCchCopy(_key1, 32, KeyToName(_prev_code));
+				StringCchCopy(_key1, 32, KeyToName(prev_code));
 				StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
 			}
 			else
 			{
-				StringCchCopy(_key1, 32, KeyToName(_prev_code));
+				StringCchCopy(_key1, 32, KeyToName(prev_code));
 				StringCchCopy(_key2, 32, KeyToName(_code));
 				StringCbPrintf(_str, sizeof(_str), _T("%s + %s"), _key1, _key2);
 			}
 			SetWindowText(hEdit, _str);
-			_prev_code = 0;
+			prev_code = 0;
 		}
 		break;
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
 		_code = (UINT)wParam;
-		if ((_prev_code == 0) || (_prev_code == _code))
+		if ((prev_code == 0) || (prev_code == _code))
 		{
 			StringCchCopy(_key1, 32, KeyToName(_code));
 			StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
@@ -714,13 +802,13 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		}
 		else 
 		{
-			StringCchCopy(_key1, 32, KeyToName(_prev_code));
+			StringCchCopy(_key1, 32, KeyToName(prev_code));
 			StringCchCopy(_key2, 32, KeyToName(_code));
 			StringCbPrintf(_str, sizeof(_str), _T("%s + %s"), _key1, _key2);
-			SetShortcut(2, _prev_code, _code);
+			SetShortcut(2, prev_code, _code);
 		}
 		SetWindowText(hEdit, _str);
-		_prev_code = _code;
+		prev_code = _code;
 		switch (_code)
 		{
 			case VK_MENU:
@@ -728,5 +816,5 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		}
 		break;
 	}
-	return CallWindowProc(_edit_proc, hEdit, message, wParam, lParam);
+	return CallWindowProc(edit_proc, hEdit, message, wParam, lParam);
 }

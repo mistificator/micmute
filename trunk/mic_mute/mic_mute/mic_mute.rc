@@ -29,8 +29,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION GLOBAL_VERSION_MAJOR,GLOBAL_VERSION_MINOR,GLOBAL_VERSION_SUB,0
- PRODUCTVERSION GLOBAL_VERSION_MAJOR,GLOBAL_VERSION_MINOR,GLOBAL_VERSION_SUB,0
+ FILEVERSION 0,1,5,0
+ PRODUCTVERSION 0,1,5,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,15 +45,14 @@ BEGIN
     BEGIN
         BLOCK "000004b0"
         BEGIN
-            VALUE "Comments", GLOBAL_CONTACTS
-            VALUE "CompanyName", ""
-            VALUE "FileDescription", GLOBAL_PRODUCT_NAME
-            VALUE "FileVersion", GLOBAL_VERSION
-            VALUE "InternalName", GLOBAL_PRODUCT_NAME
-            VALUE "LegalCopyright", GLOBAL_COPYRIGHT
-            VALUE "OriginalFilename", GLOBAL_EXE_NAME
-            VALUE "ProductName", GLOBAL_PRODUCT_NAME
-            VALUE "ProductVersion", GLOBAL_VERSION
+            VALUE "Comments", "mist.poryvaev@gmail.com"
+            VALUE "FileDescription", "MicMute"
+            VALUE "FileVersion", "MicMute 0.1.5"
+            VALUE "InternalName", "MicMute"
+            VALUE "LegalCopyright", "© 2010,2011 Mist Poryvaev"
+            VALUE "OriginalFilename", "mic_mute.exe"
+            VALUE "ProductName", "MicMute"
+            VALUE "ProductVersion", "MicMute 0.1.5"
         END
     END
     BLOCK "VarFileInfo"
@@ -112,6 +111,8 @@ BEGIN
         MENUITEM "Hide MicMute",                IDM_HIDE_MICMUTE
         MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
         MENUITEM "Start muted",                 IDM_START_MUTED
+        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
+        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
     END
     POPUP "&Help"
     BEGIN
@@ -129,6 +130,9 @@ BEGIN
         MENUITEM "Show MicMute",                IDM_SHOW_MICMUTE
         MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
         MENUITEM "Start muted",                 IDM_START_MUTED
+        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
+        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        MENUITEM SEPARATOR
         MENUITEM "&About ...",                  IDM_ABOUT
         MENUITEM "Exit",                        IDM_EXIT
     END
@@ -153,14 +157,14 @@ END
 //
 
 IDD_ABOUTBOX DIALOGEX 22, 17, 199, 41
-STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,32,32
-    LTEXT           GLOBAL_VERSION,IDC_STATIC,49,5,119,8,SS_NOPREFIX
-    LTEXT           GLOBAL_COPYRIGHT,IDC_STATIC,49,15,119,8
-    LTEXT           GLOBAL_CONTACTS,IDC_STATIC,49,25,119,8
+    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
+    LTEXT           "MicMute 0.1.5",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "© 2010, 2011 Mist Poryvaev",IDC_STATIC,49,15,119,8
+    CONTROL         "mist.poryvaev@gmail.com",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,49,25,119,8
     DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
 END
 
