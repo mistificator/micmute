@@ -71,6 +71,8 @@ public:
 		MIXERLINE mxl;  
 		MIXERCONTROL mc;  
 		MIXERLINECONTROLS mxlc;  
+		ZeroMemory(&mc, sizeof(mc));
+		ZeroMemory(&mxlc, sizeof(mxlc));
 		DWORD kind, count;  
 		int item=-1;  
 		if (dkKind == Play)  
@@ -91,6 +93,7 @@ public:
 		{
 			for (DWORD _idx = 0; _idx < caps.cDestinations; _idx++)
 			{
+				ZeroMemory(&mxl, sizeof(mxl));
 				mxl.cbStruct = sizeof(mxl);  
 				mxl.dwDestination = _idx;
 				mxl.dwSource = 0;
@@ -155,13 +158,13 @@ public:
 		m_bOK = true;
 		return m_bOK;
 	}
-	CMixer::CMixer(): m_dwVolControlID(-1),  
-		m_bOK(false), m_dwChannels(0)
+	CMixer::CMixer()
+		: m_dwVolControlID(-1), m_bOK(false), m_dwChannels(0), m_dwMuteControlID(-1), m_dwComponent(-1), m_dwDevNumber(-1)
 	{
 
 	}
-	CMixer::CMixer(DWORD ComponentType, DestKind dkKind, UINT Device = 0): m_dwVolControlID(-1),  
-		m_bOK(false), m_dwChannels(0)  
+	CMixer::CMixer(DWORD ComponentType, DestKind dkKind, UINT Device = 0)  
+		: m_dwVolControlID(-1), m_bOK(false), m_dwChannels(0), m_dwMuteControlID(-1), m_dwComponent(-1), m_dwDevNumber(-1)
 
 	{  
 		SelectComponent(ComponentType, dkKind, Device);  
@@ -180,6 +183,8 @@ public:
 		if (FAILED(hr)) return;  
 		MIXERCONTROLDETAILS mxcd;  
 		MIXERCONTROLDETAILS_BOOLEAN mxdu;  
+		ZeroMemory(&mxcd, sizeof(mxcd));
+		ZeroMemory(&mxdu, sizeof(mxdu));
 		mxdu.fValue = bMute;  
 		mxcd.cMultipleItems = 0;  
 		mxcd.cChannels = 1;  
@@ -198,13 +203,15 @@ public:
 		{
 			return FALSE;
 		}
+		MIXERCONTROLDETAILS mxcd;  
 		MIXERCONTROLDETAILS_BOOLEAN mxdu;
+		ZeroMemory(&mxcd, sizeof(mxcd));
+		ZeroMemory(&mxdu, sizeof(mxdu));
 		mxdu.fValue = FALSE;
 		HMIXER hMixer;  
 		HRESULT hr;  
 		hr = mixerOpen(&hMixer, m_dwDevNumber, 0, 0, 0);  
 		if (FAILED(hr)) return FALSE;  
-		MIXERCONTROLDETAILS mxcd;  
 		mxcd.cMultipleItems = 0;  
 		mxcd.cChannels = m_dwChannels;  
 		mxcd.cbStruct = sizeof(mxcd);  
@@ -224,7 +231,9 @@ public:
 		hr = mixerOpen(&hMixer, m_dwDevNumber, 0, 0, 0);  
 		if (FAILED(hr)) return;  
 		MIXERCONTROLDETAILS mxcd;  
-		MIXERCONTROLDETAILS_UNSIGNED mxdu;  
+		MIXERCONTROLDETAILS_UNSIGNED mxdu; 
+		ZeroMemory(&mxcd, sizeof(mxcd));
+		ZeroMemory(&mxdu, sizeof(mxdu));
 		mxdu.dwValue = dwVol;  
 		mxcd.cMultipleItems = 0;  
 		mxcd.cChannels = 1;  
@@ -239,13 +248,15 @@ public:
 	DWORD CMixer::GetVolume()  
 	{  
 		if (!m_bOK) return 0;  
+		MIXERCONTROLDETAILS mxcd;  
 		MIXERCONTROLDETAILS_UNSIGNED mxdu;
+		ZeroMemory(&mxcd, sizeof(mxcd));
+		ZeroMemory(&mxdu, sizeof(mxdu));
 		mxdu.dwValue = 0;
 		HMIXER hMixer;  
 		HRESULT hr;  
 		hr = mixerOpen(&hMixer, m_dwDevNumber, 0, 0, 0);  
 		if (FAILED(hr)) return 0;  
-		MIXERCONTROLDETAILS mxcd;  
 		mxcd.cMultipleItems = 0;  
 		mxcd.cChannels = m_dwChannels;  
 		mxcd.cbStruct = sizeof(mxcd);  

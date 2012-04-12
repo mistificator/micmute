@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="mic_mute"
 	ProjectGUID="{6BA80759-8BA0-4EF6-9D27-99807E231C98}"
 	RootNamespace="mic_mute"
@@ -222,10 +222,6 @@
 				RelativePath=".\stdafx.h"
 				>
 			</File>
-			<File
-				RelativePath=".\version.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -255,10 +251,6 @@
 		</Filter>
 		<File
 			RelativePath=".\mic_mute.exe.manifest"
-			>
-		</File>
-		<File
-			RelativePath=".\ReadMe.txt"
 			>
 		</File>
 	</Files>
