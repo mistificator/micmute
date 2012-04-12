@@ -99,11 +99,25 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	static HHOOK hhook; 
 
 	hinstDLL = LoadLibrary(_T("key_hook.dll")); 
+
+	if (!hinstDLL)
+	{
+		MessageBox(0, _T("key_hook.dll not found or cannot be loaded"), _T("MicMute error"), MB_OK | MB_ICONERROR);
+		return 0;
+	}
+
 	hkprc = (HOOKPROC)GetProcAddress(hinstDLL, "_KeyboardProc@12"); 
 	SetShortcut = (_SetShortCut)GetProcAddress(hinstDLL, "_SetShortcut@12");
 	GetShortcut = (_GetShortCut)GetProcAddress(hinstDLL, "_GetShortcut@12");
 	SetEnabled = (_SetEnabled)GetProcAddress(hinstDLL, "_SetEnabled@4");
 	SetMode = (_SetMode)GetProcAddress(hinstDLL, "_SetMode@4");
+
+	if (!hkprc || !SetShortcut || !GetShortcut || !SetEnabled || !SetMode)
+	{
+		MessageBox(0, _T("key_hook.dll is corrupted or doesn't provide requested functions"), _T("MicMute error"), MB_OK | MB_ICONERROR);
+		return 0;
+	}
+
 	hhook = SetWindowsHookEx(WH_KEYBOARD,hkprc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
@@ -131,7 +145,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	_stscanf(_str, _T("%i"), &SelectedDevice);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &MicMode);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _T("0"), _str, 1024, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _T("1"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &ShowNotifications);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _T("1"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &SoundSignal);
@@ -148,7 +162,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	// Perform application initialization:
 	if (!InitInstance (hInstance, SW_HIDE))
 	{
-		return FALSE;
+		return 0;
 	}
 
 	Thread = CreateThread( 

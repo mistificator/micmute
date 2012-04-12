@@ -29,8 +29,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,5,0
- PRODUCTVERSION 0,1,5,0
+ FILEVERSION 0,1,6,0
+ PRODUCTVERSION 0,1,6,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -47,12 +47,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.5"
+            VALUE "FileVersion", "MicMute 0.1.6"
             VALUE "InternalName", "MicMute"
-            VALUE "LegalCopyright", "© 2010,2011 Mist Poryvaev"
+            VALUE "LegalCopyright", "© 2010-2012 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.5"
+            VALUE "ProductVersion", "MicMute 0.1.6"
         END
     END
     BLOCK "VarFileInfo"
@@ -162,8 +162,8 @@ CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.5",IDC_STATIC,49,5,119,8,SS_NOPREFIX
-    LTEXT           "© 2010, 2011 Mist Poryvaev",IDC_STATIC,49,15,119,8
+    LTEXT           "MicMute 0.1.6",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "© 2010-2012 Mist Poryvaev",IDC_STATIC,49,15,119,8
     CONTROL         "mist.poryvaev@gmail.com",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,49,25,119,8
     DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
 END
