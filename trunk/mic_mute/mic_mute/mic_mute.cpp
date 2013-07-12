@@ -83,7 +83,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
- 	// TODO: Place code here.
+ 	hInst = hInstance;
 
 	SingleControl = CreateMutex(NULL, FALSE, _T("SingleControl!"));
 	if (GetLastError() == ERROR_ALREADY_EXISTS)
@@ -102,7 +102,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (!hinstDLL)
 	{
-		MessageBox(0, _T("key_hook.dll not found or cannot be loaded"), _T("MicMute error"), MB_OK | MB_ICONERROR);
+		TCHAR warn[1024];
+		LoadString(hInstance, IDS_NOHOOK, warn, sizeof(warn) / sizeof(warn[0]));
+		TCHAR caption[1024];
+		LoadString(hInstance, IDS_ERRORCAPTION, caption, sizeof(caption) / sizeof(caption[0]));
+		MessageBox(NULL, warn, caption, MB_OK | MB_ICONERROR);
 		return 0;
 	}
 
@@ -114,7 +118,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (!hkprc || !SetShortcut || !GetShortcut || !SetEnabled || !SetMode)
 	{
-		MessageBox(0, _T("key_hook.dll is corrupted or doesn't provide requested functions"), _T("MicMute error"), MB_OK | MB_ICONERROR);
+		TCHAR warn[1024];
+		LoadString(hInstance, IDS_BADHOOK, warn, sizeof(warn) / sizeof(warn[0]));
+		TCHAR caption[1024];
+		LoadString(hInstance, IDS_ERRORCAPTION, caption, sizeof(caption) / sizeof(caption[0]));
+		MessageBox(NULL, warn, caption, MB_OK | MB_ICONERROR);
 		return 0;
 	}
 
@@ -194,7 +202,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	TCHAR _tip[] = L"MicMute";
 	StringCchCopy(nid.szTip, 128, _tip);
 	StringCchCopy(nid.szInfoTitle, 64, _tip);
-	TCHAR _tooltip_text[] = _T("Started");
+	TCHAR _tooltip_text[1024];
+	LoadString(hInstance, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
 	StringCchCopy(nid.szInfo, 256, _tooltip_text);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
@@ -225,7 +234,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	mii.fMask = MIIM_SUBMENU | MIIM_STRING;
 	mii.fType = MFT_STRING;
 	mii.hSubMenu = DevicesMenu;
-	static const TCHAR _devices_item[] = _T("Devices");
+	TCHAR _devices_item[1024];
+	LoadString(hInstance, IDS_DEVICES, _devices_item, sizeof(_devices_item) / sizeof(_devices_item[0]));
 	mii.dwTypeData = (LPTSTR)_devices_item;
 	mii.cch = sizeof(_devices_item) / sizeof(TCHAR);
 	InsertMenuItem(GetMenu(AppHWnd), 2, TRUE, &mii);
@@ -352,7 +362,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // Store instance handle in our global variable
 
    AppHWnd = CreateWindow(szWindowClass, szTitle, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-      CW_USEDEFAULT, CW_USEDEFAULT, 240, 120, NULL, NULL, hInstance, NULL);
+      CW_USEDEFAULT, CW_USEDEFAULT, 280, 120, NULL, NULL, hInstance, NULL);
 
    if (!AppHWnd)
    {
@@ -395,9 +405,11 @@ VOID MuteToggle(HWND hWnd)
 	mute_state = CheckMenuItem(menu, IDM_MUTE, MF_UNCHECKED);
 	if (mute_state == MF_UNCHECKED)
 	{
-		TCHAR _tooltip_text[] = _T("Mic Off");
+		TCHAR _tooltip_text[1024];
+		LoadString(hInst, IDS_MICOFF, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
 		StringCchCopy(nid.szInfo, 265, _tooltip_text);
-		TCHAR _tip[] = _T("MicMute - Mic Off");
+		TCHAR _tip[1024];
+		LoadString(hInst, IDS_MICOFF2, _tip, sizeof(_tip) / sizeof(_tip[0]));
 		StringCchCopy(nid.szTip, 128, _tip);
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		CheckMenuItem(menu, IDM_MUTE, mute_state = MF_CHECKED);
@@ -410,9 +422,11 @@ VOID MuteToggle(HWND hWnd)
 	}
 	else 
 	{
-		TCHAR _tooltip_text[] = _T("Mic On");
+		TCHAR _tooltip_text[1024];
+		LoadString(hInst, IDS_MICON, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
 		StringCchCopy(nid.szInfo, 256, _tooltip_text);
-		TCHAR _tip[] = _T("MicMute");
+		TCHAR _tip[1024];
+		LoadString(hInst, IDS_MICON2, _tip, sizeof(_tip) / sizeof(_tip[0]));
 		StringCchCopy(nid.szTip,128,  _tip);
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		mute_state = MF_UNCHECKED;
@@ -497,7 +511,11 @@ VOID SoundSignalToggle(HWND hWnd)
 
 VOID ShowTransmitterModeWarning(HWND hWnd)
 {
-	MessageBox(hWnd, _T("Keyboard shortcut must consist of only one key for transmitter mode.\nUse \"Setup shortcut\" menu item to change shortcut."), _T("MicMute information"), MB_OK | MB_ICONINFORMATION);
+	TCHAR warn[1024];
+	LoadString(hInst, IDS_TRANSMWAR, warn, sizeof(warn) / sizeof(warn[0]));
+	TCHAR caption[1024];
+	LoadString(hInst, IDS_INFOCAPTION, caption, sizeof(caption) / sizeof(caption[0]));
+	MessageBox(hWnd, warn, caption, MB_OK | MB_ICONINFORMATION);
 }
 
 VOID TransmitterToggle(HWND hWnd)

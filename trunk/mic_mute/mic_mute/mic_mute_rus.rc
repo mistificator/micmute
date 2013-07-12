@@ -1,6 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "resource.h"
+#include "resource_rus.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -15,11 +15,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Neutral (Default) resources
+// Russian resources
 
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUD)
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
 #ifdef _WIN32
-LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
+LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 #pragma code_page(1251)
 #endif //_WIN32
 
@@ -43,21 +43,21 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "000004b0"
+        BLOCK "080004b0"
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
             VALUE "FileVersion", "MicMute 0.1.6.1"
             VALUE "InternalName", "MicMute"
-            VALUE "LegalCopyright", "© 2010-2013 Mist Poryvaev"
-            VALUE "OriginalFilename", "mic_mute.exe"
+            VALUE "LegalCopyright", "© 2010-2013 Мист Порываев"
+            VALUE "OriginalFilename", "mic_mute_rus.exe"
             VALUE "ProductName", "MicMute"
             VALUE "ProductVersion", "MicMute 0.1.6.1"
         END
     END
     BLOCK "VarFileInfo"
     BEGIN
-        VALUE "Translation", 0x0, 1200
+        VALUE "Translation", 0x800, 1200
     END
 END
 
@@ -67,7 +67,7 @@ END
 // RT_MANIFEST
 //
 
-1                       RT_MANIFEST             "mic_mute.exe.manifest"
+1                       RT_MANIFEST             "mic_mute_rus.exe.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -87,42 +87,42 @@ IDI_SHORTCUT            ICON                    "shortcut.ico"
 
 IDC_MIC_MUTE MENU 
 BEGIN
-    POPUP "&File"
+    POPUP "&Файл"
     BEGIN
-        MENUITEM "E&xit",                       IDM_EXIT
+        MENUITEM "В&ыход",                      IDM_EXIT
     END
-    POPUP "&Options"
+    POPUP "&Настройки"
     BEGIN
-        MENUITEM "Microphone mute",             IDM_MUTE
-        MENUITEM "Transmitter mode",            IDM_TRANSMITTER_MODE
+        MENUITEM "Микрофон выключен",           IDM_MUTE
+        MENUITEM "Режим передатчика",           IDM_TRANSMITTER_MODE
         MENUITEM SEPARATOR
-        MENUITEM "Hide MicMute",                IDM_HIDE_MICMUTE
-        MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
-        MENUITEM "Start muted",                 IDM_START_MUTED
-        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        MENUITEM "Скрыть окно программы",       IDM_HIDE_MICMUTE
+        MENUITEM "Настройка сочетания клавиш",  IDM_SETUP_SHORTCUT
+        MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
+        MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
+        MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
     END
-    POPUP "&Help"
+    POPUP "&Справка"
     BEGIN
-        MENUITEM "&About ...",                  IDM_ABOUT
+        MENUITEM "О программе ...",             IDM_ABOUT
     END
 END
 
 IDC_TRAY_MIC_MUTE MENU 
 BEGIN
-    POPUP "Tray Menu"
+    POPUP "Меню в трее"
     BEGIN
-        MENUITEM "Microphone mute",             IDM_MUTE
-        MENUITEM "Transmitter mode",            IDM_TRANSMITTER_MODE
+        MENUITEM "Микрофон выключен",           IDM_MUTE
+        MENUITEM "Режим передатчика",           IDM_TRANSMITTER_MODE
         MENUITEM SEPARATOR
-        MENUITEM "Show MicMute",                IDM_SHOW_MICMUTE
-        MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
-        MENUITEM "Start muted",                 IDM_START_MUTED
-        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        MENUITEM "Показать окно программы",     IDM_SHOW_MICMUTE
+        MENUITEM "Настройка сочетания клавиш",  IDM_SETUP_SHORTCUT
+        MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
+        MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
+        MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
         MENUITEM SEPARATOR
-        MENUITEM "&About ...",                  IDM_ABOUT
-        MENUITEM "Exit",                        IDM_EXIT
+        MENUITEM "О программе ...",             IDM_ABOUT
+        MENUITEM "Выход",                       IDM_EXIT
     END
 END
 
@@ -144,27 +144,27 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 22, 17, 199, 41
+IDD_ABOUTBOX DIALOGEX 22, 17, 210, 41
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
-CAPTION "About"
+CAPTION "О программе"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
     LTEXT           "MicMute 0.1.6.1",IDC_STATIC,49,5,119,8,SS_NOPREFIX
-    LTEXT           "© 2010-2013 Mist Poryvaev",IDC_STATIC,49,15,119,8
+    LTEXT           "© 2010-2013 Мист Порываев",IDC_STATIC,49,15,119,8
     CONTROL         "mist.poryvaev@gmail.com",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,49,25,119,8
-    DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
+    DEFPUSHBUTTON   "Принять",IDOK,165,6,37,11,WS_GROUP
 END
 
-IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 199, 41
-STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_CAPTION | WS_SYSMENU
-CAPTION "Setup shortcut"
+IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 210, 41
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Настройка сочетания клавиш"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
-    LTEXT           "Press one or two keys",IDC_STATIC,49,10,112,8,SS_NOPREFIX
+    LTEXT           "Нажмите одну или две клавиши",IDC_STATIC,49,10,112,8,SS_NOPREFIX
     EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
-    DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
+    DEFPUSHBUTTON   "Принять",IDOK,165,6,38,11,WS_GROUP
 END
 
 
@@ -176,7 +176,7 @@ END
 
 1 TEXTINCLUDE 
 BEGIN
-    "resource.h\0"
+    "resource_rus.h\0"
 END
 
 2 TEXTINCLUDE 
@@ -204,25 +204,25 @@ END
 STRINGTABLE 
 BEGIN
     IDS_APP_TITLE           "MicMute"
-    IDS_STARTED             "Started"
-    IDS_DEVICES             "Devices"
-    IDS_MICOFF              "Mic Off"
-    IDS_MICON               "Mic On"
-    IDS_MICOFF2             "MicMute - Mic Off"
+    IDS_STARTED             "Запуск"
+    IDS_DEVICES             "Устройства"
+    IDS_MICOFF              "Микрофон выключен"
+    IDS_MICON               "Микрофон включен"
+    IDS_MICOFF2             "MicMute - микр. выкл."
     IDC_MIC_MUTE            "MIC_MUTE"
-    IDS_MICON2              "MicMute - Mic On"
+    IDS_MICON2              "MicMute - микр. вкл."
 END
 
 STRINGTABLE 
 BEGIN
-    IDS_TRANSMWAR           "Keyboard shortcut must consist of only one key for transmitter mode.\nUse ""Setup shortcut"" menu item to change shortcut."
-    IDS_INFOCAPTION         "MicMute information"
-    IDS_ERRORCAPTION        "MicMute error"
-    IDS_NOHOOK              "key_hook.dll not found or cannot be loaded"
-    IDS_BADHOOK             "key_hook.dll is corrupted or doesn't provide requested functions"
+    IDS_TRANSMWAR           "Для режима передатчика должна быть назначена одна клавиша.\nИспользуйте меню ""Настройка сочетания клавиш""."
+    IDS_INFOCAPTION         "Информация MicMute"
+    IDS_ERRORCAPTION        "Ошибка MicMute"
+    IDS_NOHOOK              "Библиотека key_hook.dll не найдена или не может быть загружена"
+    IDS_BADHOOK             "Библиотека key_hook.dll повреждена или не предоставляет требуемых функций"
 END
 
-#endif    // Neutral (Default) resources
+#endif    // Russian resources
 /////////////////////////////////////////////////////////////////////////////
 
 
