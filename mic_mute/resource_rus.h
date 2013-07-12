@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by mic_mute.rc
+// Used by mic_mute_rus.rc
 //
 #define IDC_MYICON                      2
 #define IDD_MIC_MUTE_DIALOG             102

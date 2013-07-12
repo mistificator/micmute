@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute", "mic_mute\mic_mu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "key_hook", "key_hook\key_hook.vcproj", "{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute_rus", "mic_mute\mic_mute_rus.vcproj", "{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,10 @@ Global
 		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Debug|Win32.Build.0 = Debug|Win32
 		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Release|Win32.ActiveCfg = Release|Win32
 		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}.Release|Win32.Build.0 = Release|Win32
+		{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}.Debug|Win32.Build.0 = Debug|Win32
+		{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}.Release|Win32.ActiveCfg = Release|Win32
+		{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
