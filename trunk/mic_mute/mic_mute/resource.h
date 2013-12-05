@@ -25,6 +25,8 @@
 #define IDS_ERRORCAPTION                134
 #define IDS_NOHOOK                      135
 #define IDS_BADHOOK                     136
+#define IDC_MAIL                        1003
+#define IDC_DONATE                      1004
 #define IDM_MUTE                        32771
 #define IDC_TRAY_MIC_MUTE               32772
 #define IDM_SHOW_MICMUTE                32773
@@ -44,7 +46,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        133
 #define _APS_NEXT_COMMAND_VALUE         32784
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_CONTROL_VALUE         1004
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
