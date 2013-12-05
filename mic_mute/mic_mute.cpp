@@ -215,6 +215,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		MIXERCAPS _caps;
 		if FAILED(CMixer::GetCaps(_idx, &_caps)) continue;
+		if (_caps.cDestinations == 0) continue;
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE;
 		mii.fType = MFT_RADIOCHECK | MFT_STRING;
@@ -243,6 +244,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, SelectedDevice + DEVICE_FIRST_ID, MF_BYCOMMAND);
 	
 	mixer_mic_in.SelectDevice(SelectedDevice);
+
+	BOOL SavedMute = mixer_mic_in.GetMute();
 
 	if (StartMuted)
 	{
@@ -295,6 +298,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
 
 	mixer_mic_in.SetVolume(SavedVolume); 
+	mixer_mic_in.SetMute(SavedMute);
 
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 
@@ -444,6 +448,7 @@ VOID MuteToggle(HWND hWnd)
 
 	PrevVolume = mixer_mic_in.GetVolume();
 	mixer_mic_in.SetVolume(mute_state == MF_CHECKED ? 0 : SavedVolume);
+	mixer_mic_in.SetMute(mute_state == MF_CHECKED);
 	if (PrevVolume > 0)
 	{
 		SavedVolume = PrevVolume;
@@ -666,8 +671,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
+		{
+			SetWindowText(::GetDlgItem(hDlg, IDC_MAIL), L"mailto:mist.poryvaev@gmail.com");
+			SetWindowText(::GetDlgItem(hDlg, IDC_DONATE), L"1FNrZr7Y4hx4fpaWRwgHsUL8T2yRKe1Rm6");
+			return (INT_PTR)TRUE;
+		}
+		break;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
 		{
