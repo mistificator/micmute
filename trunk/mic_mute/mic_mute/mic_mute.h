@@ -1,8 +1,7 @@
 #pragma once
 
+#include "stdafx.h"
 #include "resource.h"
-#include <windows.h>
-#include <MMsystem.h>
 
 class CMixer
 {
@@ -24,7 +23,7 @@ public:
 		HRESULT _hr; 
 		_hr = mixerOpen(&_mix, _dev_number, 0, 0, 0); 
 		if (FAILED(_hr)) return _hr;  
-		_hr = mixerGetDevCaps((UINT_PTR)_mix, _caps, sizeof(MIXERCAPS));
+		_hr = mixerGetDevCaps((UINT_PTR)_mix, (MIXERCAPS *)_caps, sizeof(MIXERCAPS));
 		if (FAILED(_hr)) return _hr;  
 		_hr = mixerClose(_mix);
 		if (FAILED(_hr)) return _hr;  
@@ -33,10 +32,6 @@ public:
 	}
 	bool SelectDevice(UINT Device)
 	{
-		if (!m_bOK)
-		{
-			return false;
-		}
 		if (Device >= DevCount())
 		{
 			return false;
@@ -45,7 +40,6 @@ public:
 	}
 	bool SelectComponent(DWORD ComponentType, DestKind dkKind, UINT Device = 0)
 	{
-
 		m_dwVolControlID = -1;
 		m_bOK = false;
 		m_dwChannels = 0;  
@@ -102,7 +96,6 @@ public:
 				if (mxl.dwComponentType == MIXERLINE_COMPONENTTYPE_DST_WAVEIN)
 				{
 					mxl.dwComponentType = ComponentType;  
-					// loop through the sources  
 					count = mxl.cConnections;  
 					for(UINT i = 0; i < count; i++)  
 					{  
@@ -115,7 +108,7 @@ public:
 						{  
 							item = i;  
 							m_dwChannels = mxl.cChannels; 
-							_idx = caps.cDestinations; // exit outer loop
+							_idx = caps.cDestinations; 
 							break;  
 						}  
 					}  
@@ -153,9 +146,10 @@ public:
 				m_dwMuteControlID = mc.dwControlID;  
 			}
 
+			m_bOK = true;
+
 		}  
 		mixerClose(hMixer);
-		m_bOK = true;
 		return m_bOK;
 	}
 	CMixer::CMixer()

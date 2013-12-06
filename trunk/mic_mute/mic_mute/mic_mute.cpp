@@ -3,10 +3,7 @@
 
 #include "stdafx.h"
 #include "mic_mute.h"
-#include "ShellAPI.h"
 #include "./../key_hook/key_hook.h"
-#include "strsafe.h"
-#include "shlobj.h"
 
 _SetShortCut	SetShortcut;
 _SetEnabled		SetEnabled;
@@ -44,14 +41,44 @@ VOID				StartMutedToggle(HWND hWnd);
 VOID				TransmitterToggle(HWND hWnd);
 VOID				ShowNotificationsToggle(HWND hWnd);
 VOID				SoundSignalToggle(HWND hWnd);
+VOID				AutorunToggle(HWND hWnd);
+BOOL CALLBACK		EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
+
+typedef BOOL (CALLBACK *LPDSENUMCALLBACKW)(LPGUID, LPCWSTR, LPCWSTR, LPVOID);
+typedef HRESULT (WINAPI * DirectSoundCaptureEnumerateW_t)(__in LPDSENUMCALLBACKW, __in_opt LPVOID);
+
+BOOL CALLBACK EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx)
+{
+	HMENU menu = (HMENU)ctx;
+	MENUITEMINFO mii;
+	for (UINT _idx = 0; _idx < CMixer::DevCount(); _idx++)
+	{
+		MIXERCAPS _caps;
+		if FAILED(CMixer::GetCaps(_idx, &_caps)) continue;
+		if (_caps.cDestinations == 0) continue;
+		if (StrStr(descr, _caps.szPname) == NULL) continue;
+		if (mixer_mic_in.SelectDevice(_idx) == false) continue;
+		mii.cbSize = sizeof(MENUITEMINFO);
+		mii.fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE;
+		mii.fType = MFT_RADIOCHECK | MFT_STRING;
+		mii.wID = DEVICE_FIRST_ID + _idx;
+		mii.hbmpChecked = NULL;
+		StringCchLength(descr, STRSAFE_MAX_CCH, & mii.cch);
+		mii.dwTypeData = new TCHAR[mii.cch + 1];
+		StringCchCopy(mii.dwTypeData, mii.cch + 1, descr);
+		InsertMenuItem(menu, _idx, TRUE, &mii);
+	}
+	return TRUE;
+}
 
 HANDLE HookEvent = NULL;
 HANDLE StopEvent = NULL;
 HANDLE Thread = NULL;
 HWND AppHWnd = NULL;
 BOOL StartMuted = FALSE;
+BOOL Autorun = FALSE;
 UINT SelectedDevice = 0;
 HANDLE SingleControl = NULL;
 int MicMode = MIC_MODE_STANDART;
@@ -91,6 +118,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		CloseHandle(SingleControl);
 		return 0;
 	}
+
+	HMODULE dsound = LoadLibrary(L"dsound.dll");
+	DirectSoundCaptureEnumerateW_t DirectSoundCaptureEnumerate = (DirectSoundCaptureEnumerateW_t)GetProcAddress(dsound, "DirectSoundCaptureEnumerateW");
 
 	MSG msg;
 	HACCEL hAccelTable;
@@ -140,7 +170,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
 
 	TCHAR _str[1024];
-	int _count, _key1, _key2, _start_muted;
+	int _count, _key1, _key2, _start_muted, _arun;
 	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_count);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, szPath);
@@ -157,9 +187,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	_stscanf(_str, _T("%i"), &ShowNotifications);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _T("1"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &SoundSignal);
-
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_arun);
 
 	StartMuted = (_start_muted != 0);
+	Autorun = (_arun != 0);
 	SetShortcut(_count, _key1, _key2);
 
 	// Initialize global strings
@@ -209,13 +241,21 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MIC_MUTE));
 
+
 	MENUITEMINFO mii;
 	DevicesMenu = CreateMenu();
+
+	CoInitialize(NULL);
+	DirectSoundCaptureEnumerate(& EnumCallback, DevicesMenu);
+
+/*
+	
 	for (UINT _idx = 0; _idx < CMixer::DevCount(); _idx++)
 	{
 		MIXERCAPS _caps;
 		if FAILED(CMixer::GetCaps(_idx, &_caps)) continue;
 		if (_caps.cDestinations == 0) continue;
+		if (mixer_mic_in.SelectDevice(_idx) == false) continue;
 		mii.cbSize = sizeof(MENUITEMINFO);
 		mii.fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE;
 		mii.fType = MFT_RADIOCHECK | MFT_STRING;
@@ -226,7 +266,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		StringCchCopy(mii.dwTypeData, sizeof(_caps.szPname) / sizeof(TCHAR), _caps.szPname);
 		InsertMenuItem(DevicesMenu, _idx, TRUE, &mii);
 	}
-
+*/
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
 	TrayMenu = GetSubMenu(hmenu, 0);
 	SetMenuDefaultItem(TrayMenu, IDM_SHOW_MICMUTE, 0);
@@ -263,6 +303,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		SoundSignalToggle(AppHWnd);
 	}
 
+	if (Autorun)
+	{
+		AutorunToggle(AppHWnd);
+	}
+
 	if (MicMode == MIC_MODE_TRANSMITTER)
 	{
 		TransmitterToggle(AppHWnd);
@@ -279,6 +324,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	}
 
 	_start_muted = (StartMuted == TRUE) ? 1 : 0;
+	_arun = (Autorun == TRUE) ? 1 : 0;
 	GetShortcut(&_count, &_key1, &_key2);
 	_stprintf(_str, _T("%i"), _count);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _str, szPath);
@@ -296,6 +342,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	WritePrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _str, szPath);
 	_stprintf(_str, _T("%i"), SoundSignal);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
+	_stprintf(_str, _T("%i"), _arun);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
 
 	mixer_mic_in.SetVolume(SavedVolume); 
 	mixer_mic_in.SetMute(SavedMute);
@@ -309,6 +357,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CloseHandle(HookEvent);
 	UnhookWindowsHookEx(hhook);
 	FreeLibrary(hinstDLL);
+
+	FreeLibrary(dsound);
 
 	CloseHandle(SingleControl);
 
@@ -365,8 +415,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
 
-   AppHWnd = CreateWindow(szWindowClass, szTitle, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-      CW_USEDEFAULT, CW_USEDEFAULT, 280, 120, NULL, NULL, hInstance, NULL);
+   AppHWnd = CreateWindowEx(WS_EX_TOPMOST, szWindowClass, szTitle, WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+      CW_USEDEFAULT, CW_USEDEFAULT, 320, 120, NULL, NULL, hInstance, NULL);
 
    if (!AppHWnd)
    {
@@ -431,7 +481,7 @@ VOID MuteToggle(HWND hWnd)
 		StringCchCopy(nid.szInfo, 256, _tooltip_text);
 		TCHAR _tip[1024];
 		LoadString(hInst, IDS_MICON2, _tip, sizeof(_tip) / sizeof(_tip[0]));
-		StringCchCopy(nid.szTip,128,  _tip);
+		StringCchCopy(nid.szTip, 128, _tip);
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		mute_state = MF_UNCHECKED;
 		flash.dwFlags = FLASHW_STOP;
@@ -458,6 +508,7 @@ VOID MuteToggle(HWND hWnd)
 		SavedVolume = 32768;
 	}
 
+	InvalidateRect(hWnd, NULL, TRUE);
 }
 
 VOID StartMutedToggle(HWND hWnd)
@@ -512,6 +563,39 @@ VOID SoundSignalToggle(HWND hWnd)
 		SoundSignal = FALSE;
 	}
 	CheckMenuItem(TrayMenu, IDM_SOUND_SIGNAL, _sound_state);	
+}
+
+
+VOID AutorunToggle(HWND hWnd)
+{
+	HKEY hKey;
+	RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS, & hKey);
+
+	DWORD _arun_state = 0;
+	HMENU menu = GetMenu(hWnd);
+	_arun_state = CheckMenuItem(menu, IDM_AUTORUN, MF_UNCHECKED);
+	if (_arun_state == MF_UNCHECKED)
+	{
+		CheckMenuItem(menu, IDM_AUTORUN, _arun_state = MF_CHECKED);
+
+		LPCTSTR _cmd = GetCommandLine();
+		size_t _len;
+		StringCchLength(_cmd, STRSAFE_MAX_CCH, & _len);
+
+		RegSetValueEx(hKey, L"MicMute", 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
+		Autorun = TRUE;
+	}
+	else
+	{
+		_arun_state = MF_UNCHECKED;
+		SoundSignal = FALSE;
+
+		RegDeleteValue(hKey, L"MicMute");
+		Autorun = FALSE;
+	}
+	CheckMenuItem(TrayMenu, IDM_AUTORUN, _arun_state);	
+
+	RegCloseKey(hKey);
 }
 
 VOID ShowTransmitterModeWarning(HWND hWnd)
@@ -576,7 +660,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	int wmId, wmEvent;
 	PAINTSTRUCT ps;
-	HDC hdc;
 	POINT pt;
 
 	if (message == TrayMsg)
@@ -638,6 +721,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_HIDE_MICMUTE:
 			ShowWindow(hWnd, SW_HIDE);
 			break;
+		case IDM_AUTORUN:
+			AutorunToggle(hWnd);
+			break;
 		case IDM_SETUP_SHORTCUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
 		default:
@@ -648,10 +734,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		ShowWindow(hWnd, SW_HIDE);
 		break;
 	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		// TODO: Add any drawing code here...
-
-		EndPaint(hWnd, &ps);
+		{
+			size_t _len;
+			TCHAR _tip[1024];
+			if (IsMuted)
+			{
+				LoadString(hInst, IDS_MICOFF, _tip, sizeof(_tip) / sizeof(_tip[0]));
+				StringCchLength(_tip, STRSAFE_MAX_CCH, & _len);
+			}
+			else
+			{
+				LoadString(hInst, IDS_MICON, _tip, sizeof(_tip) / sizeof(_tip[0]));
+				StringCchLength(_tip, STRSAFE_MAX_CCH, & _len);
+			}
+			BeginPaint(hWnd, &ps);
+			TextOut(GetDC(hWnd), 0, 0, _tip, (int)_len);
+			EndPaint(hWnd, &ps);
+		}
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -672,12 +771,21 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 		{
-			SetWindowText(::GetDlgItem(hDlg, IDC_MAIL), L"mailto:mist.poryvaev@gmail.com");
 			SetWindowText(::GetDlgItem(hDlg, IDC_DONATE), L"1FNrZr7Y4hx4fpaWRwgHsUL8T2yRKe1Rm6");
 			return (INT_PTR)TRUE;
 		}
 		break;
 	case WM_COMMAND:
+		if (LOWORD(wParam) == IDC_MAIL)
+		{
+			ShellExecute(hDlg, L"open", L"mailto:mist.poryvaev@gmail.com?subject=MicMute", NULL, NULL, SW_SHOWNORMAL);
+		}
+		else
+		if (LOWORD(wParam) == IDC_UPDATES)
+		{
+			ShellExecute(hDlg, L"open", L"https://code.google.com/p/micmute/downloads/list", NULL, NULL, SW_SHOWNORMAL);
+		}
+		else
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
 		{
 			EndDialog(hDlg, LOWORD(wParam));
@@ -695,8 +803,8 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_INITDIALOG:
 		SetEnabled(false);
 		prev_code = 0;
-		edit_proc = (WNDPROC)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
-		SetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC, (LONG_PTR)ShortcutEditProc);
+		edit_proc = (WNDPROC)(size_t)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
+		SetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC, (LONG)(LONG_PTR)ShortcutEditProc);
 		return (INT_PTR)TRUE;
 	case WM_SHOWWINDOW:
 		SetFocus(GetDlgItem(hDlg, IDC_SHORTCUT));
