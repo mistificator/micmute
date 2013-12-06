@@ -91,16 +91,24 @@ BEGIN
     BEGIN
         MENUITEM "E&xit",                       IDM_EXIT
     END
+    POPUP "View"
+    BEGIN
+        MENUITEM "Hide MicMute",                IDM_HIDE_MICMUTE
+    END
     POPUP "&Options"
     BEGIN
         MENUITEM "Microphone mute",             IDM_MUTE
-        MENUITEM "Transmitter mode",            IDM_TRANSMITTER_MODE
+        MENUITEM "Transmitter mode (push-to-talk)", IDM_TRANSMITTER_MODE
         MENUITEM SEPARATOR
-        MENUITEM "Hide MicMute",                IDM_HIDE_MICMUTE
         MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
+        POPUP "Notifications"
+        BEGIN
+            MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
+            MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        END
+        MENUITEM SEPARATOR
         MENUITEM "Start muted",                 IDM_START_MUTED
-        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        MENUITEM "Autorun on system logon",     IDM_AUTORUN
     END
     POPUP "&Help"
     BEGIN
@@ -113,14 +121,19 @@ BEGIN
     POPUP "Tray Menu"
     BEGIN
         MENUITEM "Microphone mute",             IDM_MUTE
-        MENUITEM "Transmitter mode",            IDM_TRANSMITTER_MODE
+        MENUITEM "Transmitter mode (push-to-talk)", IDM_TRANSMITTER_MODE
         MENUITEM SEPARATOR
-        MENUITEM "Show MicMute",                IDM_SHOW_MICMUTE
         MENUITEM "Setup shortcut",              IDM_SETUP_SHORTCUT
-        MENUITEM "Start muted",                 IDM_START_MUTED
-        MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        POPUP "Notifications"
+        BEGIN
+            MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
+            MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+        END
         MENUITEM SEPARATOR
+        MENUITEM "Start muted",                 IDM_START_MUTED
+        MENUITEM "Autorun on system logon",     IDM_AUTORUN
+        MENUITEM SEPARATOR
+        MENUITEM "Show MicMute window",         IDM_SHOW_MICMUTE
         MENUITEM "&About ...",                  IDM_ABOUT
         MENUITEM "Exit",                        IDM_EXIT
     END
@@ -152,21 +165,22 @@ BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
     LTEXT           "MicMute 0.1.7",IDC_STATIC,49,5,119,8,SS_NOPREFIX
     LTEXT           "© 2010-2014 Mist Poryvaev",IDC_STATIC,49,15,119,8
-    DEFPUSHBUTTON   "Ok",IDOK,195,5,30,11,WS_GROUP
-    EDITTEXT        IDC_MAIL,49,24,176,14,ES_AUTOHSCROLL | ES_READONLY
+    DEFPUSHBUTTON   "Ok",IDOK,188,5,37,11,WS_GROUP
     EDITTEXT        IDC_DONATE,49,41,176,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "Donate BTC:",IDC_STATIC,4,42,42,8
+    PUSHBUTTON      "Feedback mail",IDC_MAIL,49,27,85,11
+    PUSHBUTTON      "Check for updates",IDC_UPDATES,140,27,85,11
 END
 
-IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 199, 41
-STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | WS_CAPTION | WS_SYSMENU
+IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 210, 41
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
 CAPTION "Setup shortcut"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
     LTEXT           "Press one or two keys",IDC_STATIC,49,10,112,8,SS_NOPREFIX
     EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
-    DEFPUSHBUTTON   "Ok",IDOK,165,6,30,11,WS_GROUP
+    DEFPUSHBUTTON   "Ok",IDOK,166,6,37,11,WS_GROUP
 END
 
 
@@ -212,6 +226,11 @@ BEGIN
         RIGHTMARGIN, 225
         TOPMARGIN, 5
         BOTTOMMARGIN, 55
+    END
+
+    IDD_SETUP_SHORTCUT, DIALOG
+    BEGIN
+        RIGHTMARGIN, 199
     END
 END
 #endif    // APSTUDIO_INVOKED

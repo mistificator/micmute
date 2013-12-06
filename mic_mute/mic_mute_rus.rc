@@ -91,16 +91,24 @@ BEGIN
     BEGIN
         MENUITEM "В&ыход",                      IDM_EXIT
     END
+    POPUP "Вид"
+    BEGIN
+        MENUITEM "Скрыть окно программы",       IDM_HIDE_MICMUTE
+    END
     POPUP "&Настройки"
     BEGIN
         MENUITEM "Микрофон выключен",           IDM_MUTE
-        MENUITEM "Режим передатчика",           IDM_TRANSMITTER_MODE
+        MENUITEM "Режим передатчика (push-to-talk)", IDM_TRANSMITTER_MODE
         MENUITEM SEPARATOR
-        MENUITEM "Скрыть окно программы",       IDM_HIDE_MICMUTE
         MENUITEM "Настройка сочетания клавиш",  IDM_SETUP_SHORTCUT
+        POPUP "Оповещения"
+        BEGIN
+            MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
+            MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
+        END
+        MENUITEM SEPARATOR
         MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
-        MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
+        MENUITEM "Автозапуск при входе в систему", IDM_AUTORUN
     END
     POPUP "&Справка"
     BEGIN
@@ -113,14 +121,19 @@ BEGIN
     POPUP "Меню в трее"
     BEGIN
         MENUITEM "Микрофон выключен",           IDM_MUTE
-        MENUITEM "Режим передатчика",           IDM_TRANSMITTER_MODE
+        MENUITEM "Режим передатчика (push-to-talk)", IDM_TRANSMITTER_MODE
+        MENUITEM SEPARATOR
+        MENUITEM "Настройка сочетания клавиш",  IDM_SETUP_SHORTCUT
+        POPUP "Оповещения"
+        BEGIN
+            MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
+            MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
+        MENUITEM "Автозапуск при входе в систему", IDM_AUTORUN
         MENUITEM SEPARATOR
         MENUITEM "Показать окно программы",     IDM_SHOW_MICMUTE
-        MENUITEM "Настройка сочетания клавиш",  IDM_SETUP_SHORTCUT
-        MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
-        MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
-        MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
-        MENUITEM SEPARATOR
         MENUITEM "О программе ...",             IDM_ABOUT
         MENUITEM "Выход",                       IDM_EXIT
     END
@@ -153,9 +166,10 @@ BEGIN
     LTEXT           "MicMute 0.1.7",IDC_STATIC,49,5,119,8,SS_NOPREFIX
     LTEXT           "© 2010-2014 Мист Порываев",IDC_STATIC,49,15,119,8
     DEFPUSHBUTTON   "Принять",IDOK,188,5,37,11,WS_GROUP
-    EDITTEXT        IDC_MAIL,49,24,176,14,ES_AUTOHSCROLL | ES_READONLY
     EDITTEXT        IDC_DONATE,49,41,176,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "BTC в дар:",IDC_STATIC,4,42,38,8
+    PUSHBUTTON      "Проверить обновления",IDC_UPDATES,140,27,85,11
+    PUSHBUTTON      "Письмо автору",IDC_MAIL,49,27,85,11
 END
 
 IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 210, 41
@@ -166,7 +180,7 @@ BEGIN
     ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
     LTEXT           "Нажмите одну или две клавиши",IDC_STATIC,49,10,112,8,SS_NOPREFIX
     EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
-    DEFPUSHBUTTON   "Принять",IDOK,165,6,38,11,WS_GROUP
+    DEFPUSHBUTTON   "Принять",IDOK,166,6,37,11,WS_GROUP
 END
 
 
