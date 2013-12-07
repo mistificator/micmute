@@ -25,9 +25,9 @@
 #define IDS_ERRORCAPTION                134
 #define IDS_NOHOOK                      135
 #define IDS_BADHOOK                     136
-#define IDC_UPDATES                     1003
+#define IDC_MAIL                        1003
 #define IDC_DONATE                      1004
-#define IDC_MAIL                        1005
+#define IDC_UPDATES                     1005
 #define IDM_MUTE                        32771
 #define IDC_TRAY_MIC_MUTE               32772
 #define IDM_SHOW_MICMUTE                32773
@@ -38,14 +38,7 @@
 #define IDM_TRANSMITTER_MODE            32778
 #define IDM_SHOW_NOTIFICATIONS          32779
 #define IDM_SOUND_SIGNAL                32780
-#define ID_32784                        32784
 #define IDM_AUTORUN                     32785
-#define ID_32786                        32786
-#define ID_AUTORUN                      32787
-#define ID_32788                        32788
-#define ID_32789                        32789
-#define ID_32790                        32790
-#define ID_32791                        32791
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -54,8 +47,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        133
-#define _APS_NEXT_COMMAND_VALUE         32792
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_COMMAND_VALUE         32791
+#define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
 #endif
