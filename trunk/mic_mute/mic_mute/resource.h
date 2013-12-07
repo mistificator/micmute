@@ -38,13 +38,7 @@
 #define IDM_TRANSMITTER_MODE            32778
 #define IDM_SHOW_NOTIFICATIONS          32779
 #define IDM_SOUND_SIGNAL                32780
-#define ID_OPTIONS_AUTORUN              32784
 #define IDM_AUTORUN                     32785
-#define ID_TRAYMENU_AUTORUN             32786
-#define ID_TRAYMENU_NOTIFICATIONS       32787
-#define ID_TRAYMENU_NOTIFICATIONS32788  32788
-#define ID_OPTIONS_NOTIFICATIONS        32789
-#define ID_OPTIONS_NOTIFICATIONS32790   32790
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
