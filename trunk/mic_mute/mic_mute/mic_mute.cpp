@@ -269,7 +269,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 */
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
 	TrayMenu = GetSubMenu(hmenu, 0);
-	SetMenuDefaultItem(TrayMenu, IDM_SHOW_MICMUTE, 0);
+	SetMenuDefaultItem(TrayMenu, IDM_MUTE, 0);
 
 	mii.cbSize = sizeof(MENUITEMINFO);
 	mii.fMask = MIIM_SUBMENU | MIIM_STRING;
