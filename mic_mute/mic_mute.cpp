@@ -43,6 +43,8 @@ VOID				ShowNotificationsToggle(HWND hWnd);
 VOID				SoundSignalToggle(HWND hWnd);
 VOID				AutorunToggle(HWND hWnd);
 BOOL CALLBACK		EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx);
+VOID				ReadIni(VOID);
+VOID				WriteIni(VOID);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
@@ -159,40 +161,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hhook = SetWindowsHookEx(WH_KEYBOARD,hkprc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
-	TCHAR szPath[MAX_PATH];
-	SHGetFolderPath(NULL, 
-		CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
-		NULL, 
-		0, 
-		szPath); 
-	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
-	CreateDirectory(szPath, NULL);
-	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
-
-	TCHAR _str[1024];
-	int _count, _key1, _key2, _start_muted, _arun;
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &_count);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &_key1);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("17"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &_key2);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &_start_muted);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &SelectedDevice);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &MicMode);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _T("1"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &ShowNotifications);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _T("1"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &SoundSignal);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _T("0"), _str, 1024, szPath);
-	_stscanf(_str, _T("%i"), &_arun);
-
-	StartMuted = (_start_muted != 0);
-	Autorun = (_arun != 0);
-	SetShortcut(_count, _key1, _key2);
+	ReadIni();
 
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -248,25 +217,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	CoInitialize(NULL);
 	DirectSoundCaptureEnumerate(& EnumCallback, DevicesMenu);
 
-/*
-	
-	for (UINT _idx = 0; _idx < CMixer::DevCount(); _idx++)
-	{
-		MIXERCAPS _caps;
-		if FAILED(CMixer::GetCaps(_idx, &_caps)) continue;
-		if (_caps.cDestinations == 0) continue;
-		if (mixer_mic_in.SelectDevice(_idx) == false) continue;
-		mii.cbSize = sizeof(MENUITEMINFO);
-		mii.fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE;
-		mii.fType = MFT_RADIOCHECK | MFT_STRING;
-		mii.wID = DEVICE_FIRST_ID + _idx;
-		mii.dwTypeData = new TCHAR[sizeof(_caps.szPname)];
-		mii.hbmpChecked = NULL;
-		StringCchLength(mii.dwTypeData, sizeof(_caps.szPname), &mii.cch);
-		StringCchCopy(mii.dwTypeData, sizeof(_caps.szPname) / sizeof(TCHAR), _caps.szPname);
-		InsertMenuItem(DevicesMenu, _idx, TRUE, &mii);
-	}
-*/
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
 	TrayMenu = GetSubMenu(hmenu, 0);
 	SetMenuDefaultItem(TrayMenu, IDM_MUTE, 0);
@@ -323,27 +273,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 	}
 
-	_start_muted = (StartMuted == TRUE) ? 1 : 0;
-	_arun = (Autorun == TRUE) ? 1 : 0;
-	GetShortcut(&_count, &_key1, &_key2);
-	_stprintf(_str, _T("%i"), _count);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _str, szPath);
-	_stprintf(_str, _T("%i"), _key1);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _str, szPath);
-	_stprintf(_str, _T("%i"), _key2);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _str, szPath);
-	_stprintf(_str, _T("%i"), _start_muted);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _str, szPath);
-	_stprintf(_str, _T("%i"), SelectedDevice);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, szPath);
-	_stprintf(_str, _T("%i"), MicMode);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _str, szPath);
-	_stprintf(_str, _T("%i"), ShowNotifications);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _str, szPath);
-	_stprintf(_str, _T("%i"), SoundSignal);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
-	_stprintf(_str, _T("%i"), _arun);
-	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
+//	WriteIni();
 
 	mixer_mic_in.SetVolume(SavedVolume); 
 	mixer_mic_in.SetMute(SavedMute);
@@ -372,14 +302,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 //
 //  PURPOSE: Registers the window class.
 //
-//  COMMENTS:
-//
-//    This function and its usage are only necessary if you want this code
-//    to be compatible with Win32 systems prior to the 'RegisterClassEx'
-//    function that was added to Windows 95. It is important to call this function
-//    so that the application will get 'well formed' small icons associated
-//    with it.
-//
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASSEX wcex;
@@ -406,11 +328,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 //   PURPOSE: Saves instance handle and creates main window
 //
-//   COMMENTS:
-//
-//        In this function, we save the instance handle in a global variable and
-//        create and display the main program window.
-//
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
@@ -427,6 +344,83 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    UpdateWindow(AppHWnd);
 
    return TRUE;
+}
+
+VOID ReadIni(VOID)
+{
+	TCHAR szPath[MAX_PATH];
+	SHGetFolderPath(NULL, 
+		CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+		NULL, 
+		0, 
+		szPath); 
+	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
+	CreateDirectory(szPath, NULL);
+	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
+
+	TCHAR _str[1024];
+	int _count, _key1, _key2, _start_muted, _arun;
+
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_count);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_key1);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("17"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_key2);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_start_muted);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &SelectedDevice);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &MicMode);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _T("1"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &ShowNotifications);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _T("1"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &SoundSignal);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &_arun);
+
+	StartMuted = (_start_muted != 0);
+	Autorun = (_arun != 0);
+	SetShortcut(_count, _key1, _key2);
+}
+
+VOID WriteIni(VOID)
+{
+	TCHAR szPath[MAX_PATH];
+	SHGetFolderPath(NULL, 
+		CSIDL_LOCAL_APPDATA|CSIDL_FLAG_CREATE, 
+		NULL, 
+		0, 
+		szPath); 
+	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
+	CreateDirectory(szPath, NULL);
+	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
+
+	TCHAR _str[1024];
+	int _count, _key1, _key2, _start_muted, _arun;
+
+	_start_muted = (StartMuted == TRUE) ? 1 : 0;
+	_arun = (Autorun == TRUE) ? 1 : 0;
+	GetShortcut(&_count, &_key1, &_key2);
+	_stprintf(_str, _T("%i"), _count);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _str, szPath);
+	_stprintf(_str, _T("%i"), _key1);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _str, szPath);
+	_stprintf(_str, _T("%i"), _key2);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _str, szPath);
+	_stprintf(_str, _T("%i"), _start_muted);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _str, szPath);
+	_stprintf(_str, _T("%i"), SelectedDevice);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("Device"), _str, szPath);
+	_stprintf(_str, _T("%i"), MicMode);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _str, szPath);
+	_stprintf(_str, _T("%i"), ShowNotifications);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("ShowNotifications"), _str, szPath);
+	_stprintf(_str, _T("%i"), SoundSignal);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
+	_stprintf(_str, _T("%i"), _arun);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
 }
 
 VOID MuteToggle(HWND hWnd)
@@ -729,6 +723,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
+		WriteIni();
 		break;
 	case WM_CLOSE:
 		ShowWindow(hWnd, SW_HIDE);
