@@ -21,6 +21,7 @@ UINT TrayMsg = 0;
 HMENU TrayMenu = NULL;
 INT ShowNotifications = 0;
 INT SoundSignal = 0;
+HICON IconBlack = 0, IconRed = 0;
 
 WNDPROC edit_proc = NULL;
 UINT prev_code = 0;
@@ -45,6 +46,7 @@ VOID				AutorunToggle(HWND hWnd);
 BOOL CALLBACK		EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx);
 VOID				ReadIni(VOID);
 VOID				WriteIni(VOID);
+VOID				SetIcon(HWND, HICON);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
@@ -161,6 +163,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hhook = SetWindowsHookEx(WH_KEYBOARD,hkprc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
+	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
+	IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
+
 	ReadIni();
 
 	// Initialize global strings
@@ -190,7 +195,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
-	nid.hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
+	nid.hIcon = IconBlack;
 	nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	nid.uCallbackMessage = TrayMsg;
 	nid.uTimeout = 5000;
@@ -313,12 +318,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
-	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MIC_MUTE));
+	wcex.hIcon			= IconBlack;
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
 	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_MIC_MUTE);
 	wcex.lpszClassName	= szWindowClass;
-	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm		= IconBlack;
 
 	return RegisterClassEx(&wcex);
 }
@@ -433,7 +438,7 @@ VOID MuteToggle(HWND hWnd)
 	nid.cbSize = sizeof(nid);
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
-	nid.uFlags = NIF_TIP;
+	nid.uFlags = NIF_TIP | NIF_ICON;
 	nid.uTimeout = 5000;
 	nid.dwInfoFlags = NIIF_NOSOUND;
 	if (ShowNotifications)
@@ -467,6 +472,8 @@ VOID MuteToggle(HWND hWnd)
 		{
 			Beep(300, 250);
 		}
+		SetIcon(hWnd, IconBlack);
+		nid.hIcon = IconBlack;
 	}
 	else 
 	{
@@ -484,6 +491,8 @@ VOID MuteToggle(HWND hWnd)
 		{
 			Beep(750, 250);
 		}
+		SetIcon(hWnd, IconRed);
+		nid.hIcon = IconRed;
 	}
 	CheckMenuItem(TrayMenu, IDM_MUTE, mute_state);
 
@@ -961,4 +970,15 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		break;
 	}
 	return CallWindowProc(edit_proc, hEdit, message, wParam, lParam);
+}
+
+VOID SetIcon(HWND hwnd, HICON hIcon)
+{
+	if (hIcon) 
+	{
+		SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+	}
 }

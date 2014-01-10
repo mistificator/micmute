@@ -235,19 +235,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mic_mute_gray.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\mic_mute_green.ico"
+				>
+			</File>
+			<File
+				RelativePath=".\mic_mute_red.ico"
+				>
+			</File>
+			<File
 				RelativePath=".\mic_mute_rus.rc"
 				>
 			</File>
 			<File
 				RelativePath=".\shortcut.ICO"
-				>
-			</File>
-			<File
-				RelativePath=".\small.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\vista-shield.ico"
 				>
 			</File>
 		</Filter>
