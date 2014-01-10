@@ -13,7 +13,6 @@
 #define IDS_MICOFF                      106
 #define IDI_MIC_MUTE                    107
 #define IDS_MICON                       107
-#define IDI_SMALL                       108
 #define IDS_MICOFF2                     108
 #define IDC_MIC_MUTE                    109
 #define IDD_SETUP_SHORTCUT              110
@@ -22,7 +21,11 @@
 #define IDR_MAINFRAME                   128
 #define IDS_TRANSMWAR                   132
 #define IDS_INFOCAPTION                 133
+#define IDI_MIC_MUTE_RED                133
+#define IDI_ICON1                       133
 #define IDS_ERRORCAPTION                134
+#define IDI_MIC_MUTE_GREEN              134
+#define IDI_ICON2                       134
 #define IDS_NOHOOK                      135
 #define IDS_BADHOOK                     136
 #define IDC_MAIL                        1003
@@ -46,7 +49,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        133
+#define _APS_NEXT_RESOURCE_VALUE        135
 #define _APS_NEXT_COMMAND_VALUE         32791
 #define _APS_NEXT_CONTROL_VALUE         1006
 #define _APS_NEXT_SYMED_VALUE           110
