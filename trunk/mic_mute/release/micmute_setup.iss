@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MicMute"
-#define MyAppVersion "0.1.7"
+#define MyAppVersion "0.1.7.2"
 #define MyAppPublisher "Mist Poryvaev"
 #define MyAppURL "https://micmute.googlecode.com"
 #define MyAppExeName "mic_mute.exe"
