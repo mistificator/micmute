@@ -3,6 +3,11 @@
 // Used by mic_mute.rc
 //
 #define IDC_MYICON                      2
+#define IDC_MYICON2                     3
+#define ID_MIC_OFF_BROWSE               4
+#define ID_MIC_ON_BROWSE                5
+#define IDD_SELECT_AUDIO_FILES          100
+#define IDD_SETUP_SHORTCUT              101
 #define IDD_MIC_MUTE_DIALOG             102
 #define IDS_APP_TITLE                   103
 #define IDD_ABOUTBOX                    103
@@ -15,7 +20,6 @@
 #define IDS_MICON                       107
 #define IDS_MICOFF2                     108
 #define IDC_MIC_MUTE                    109
-#define IDD_SETUP_SHORTCUT              110
 #define IDS_MICON2                      110
 #define IDI_SHORTCUT                    111
 #define IDR_MAINFRAME                   128
@@ -24,12 +28,15 @@
 #define IDI_ICON1                       133
 #define IDI_MIC_MUTE_RED                133
 #define IDS_ERRORCAPTION                134
-#define IDI_ICON2                       134
 #define IDS_NOHOOK                      135
 #define IDS_BADHOOK                     136
+#define IDS_SELECT_AUDIO_FILE			137
+#define IDS_AUDIO_FILE_FILTER			138
 #define IDC_MAIL                        1003
 #define IDC_DONATE                      1004
 #define IDC_UPDATES                     1005
+#define IDC_MIC_OFF                     1006
+#define IDC_MIC_ON                      1007
 #define IDM_MUTE                        32771
 #define IDC_TRAY_MIC_MUTE               32772
 #define IDM_SHOW_MICMUTE                32773
@@ -41,6 +48,7 @@
 #define IDM_SHOW_NOTIFICATIONS          32779
 #define IDM_SOUND_SIGNAL                32780
 #define IDM_AUTORUN                     32785
+#define IDM_SELECT_AUDIO_FILES          32793
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -48,9 +56,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        135
-#define _APS_NEXT_COMMAND_VALUE         32791
-#define _APS_NEXT_CONTROL_VALUE         1006
-#define _APS_NEXT_SYMED_VALUE           110
+#define _APS_NEXT_RESOURCE_VALUE        139
+#define _APS_NEXT_COMMAND_VALUE         32794
+#define _APS_NEXT_CONTROL_VALUE         1008
+#define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

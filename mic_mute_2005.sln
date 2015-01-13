@@ -1,13 +1,16 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute", "mic_mute\mic_mute.vcxproj", "{6BA80759-8BA0-4EF6-9D27-99807E231C98}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "key_hook", "key_hook\key_hook.vcxproj", "{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute_rus", "mic_mute\mic_mute_rus.vcxproj", "{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}"
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute", "mic_mute\mic_mute.vcproj", "{6BA80759-8BA0-4EF6-9D27-99807E231C98}"
 	ProjectSection(ProjectDependencies) = postProject
-		{6BA80759-8BA0-4EF6-9D27-99807E231C98} = {6BA80759-8BA0-4EF6-9D27-99807E231C98}
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1} = {9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "key_hook", "key_hook\key_hook.vcproj", "{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mic_mute_rus", "mic_mute\mic_mute_rus.vcproj", "{CA949E0F-BCBF-4AD4-AF8A-9C9749584CC6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9EAF6251-E90E-4DEC-8292-3BFD0042A7A1} = {9EAF6251-E90E-4DEC-8292-3BFD0042A7A1}
 	EndProjectSection
 EndProject
 Global

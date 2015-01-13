@@ -15,13 +15,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Russian resources
+// Russian (Russia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
-#ifdef _WIN32
 LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 #pragma code_page(1251)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -29,8 +27,8 @@ LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,7,2
- PRODUCTVERSION 0,1,7,2
+ FILEVERSION 0,1,8,0
+ PRODUCTVERSION 0,1,8,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -47,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.7.2"
+            VALUE "FileVersion", "MicMute 0.1.8.0"
             VALUE "InternalName", "MicMute"
-            VALUE "LegalCopyright", "© 2010-2014 Мист Порываев"
+            VALUE "LegalCopyright", "© 2010-2015 Мист Порываев"
             VALUE "OriginalFilename", "mic_mute_rus.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.7.2"
+            VALUE "ProductVersion", "MicMute 0.1.8.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -85,7 +83,7 @@ IDI_MIC_MUTE_RED        ICON                    "mic_mute_red.ico"
 // Menu
 //
 
-IDC_MIC_MUTE MENU 
+IDC_MIC_MUTE MENU
 BEGIN
     POPUP "&Файл"
     BEGIN
@@ -105,6 +103,7 @@ BEGIN
         BEGIN
             MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
             MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
+            MENUITEM "Выбрать звуковые файлы",      IDM_SELECT_AUDIO_FILES
         END
         MENUITEM SEPARATOR
         MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
@@ -116,7 +115,7 @@ BEGIN
     END
 END
 
-IDC_TRAY_MIC_MUTE MENU 
+IDC_TRAY_MIC_MUTE MENU
 BEGIN
     POPUP "Меню в трее"
     BEGIN
@@ -128,6 +127,7 @@ BEGIN
         BEGIN
             MENUITEM "Показывать уведомления",      IDM_SHOW_NOTIFICATIONS
             MENUITEM "Подавать звуковой сигнал",    IDM_SOUND_SIGNAL
+            MENUITEM "Выбрать звуковые файлы",      IDM_SELECT_AUDIO_FILES
         END
         MENUITEM SEPARATOR
         MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
@@ -145,7 +145,7 @@ END
 // Accelerator
 //
 
-IDC_MIC_MUTE ACCELERATORS 
+IDC_MIC_MUTE ACCELERATORS
 BEGIN
     "/",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
     "?",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
@@ -163,8 +163,8 @@ CAPTION "О программе"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.7.2",IDC_STATIC,49,5,119,8,SS_NOPREFIX
-    LTEXT           "© 2010-2014 Мист Порываев",IDC_STATIC,49,15,119,8
+    LTEXT           "MicMute 0.1.8.0",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "© 2010-2015 Мист Порываев",IDC_STATIC,49,15,119,8
     DEFPUSHBUTTON   "Принять",IDOK,188,5,37,11,WS_GROUP
     EDITTEXT        IDC_DONATE,49,41,176,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "BTC в дар:",IDC_STATIC,4,42,38,8
@@ -181,6 +181,22 @@ BEGIN
     LTEXT           "Нажмите одну или две клавиши",IDC_STATIC,49,10,112,8,SS_NOPREFIX
     EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
     DEFPUSHBUTTON   "Принять",IDOK,166,6,37,11,WS_GROUP
+END
+
+IDD_SELECT_AUDIO_FILES DIALOGEX 22, 17, 211, 71
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Выбрать звуковые файлы"
+FONT 10, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,18,16
+    LTEXT           "Звук отключения микрофона",IDC_STATIC,49,10,112,8,SS_NOPREFIX
+    EDITTEXT        IDC_MIC_OFF,48,19,101,14,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
+    DEFPUSHBUTTON   "Принять",IDOK,166,6,37,11,WS_GROUP
+    ICON            IDI_MIC_MUTE_RED,IDC_MYICON2,14,39,18,16
+    LTEXT           "Звук включения микрофона",IDC_STATIC,49,40,112,8,SS_NOPREFIX
+    EDITTEXT        IDC_MIC_ON,48,49,101,14,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
+    DEFPUSHBUTTON   "...",ID_MIC_OFF_BROWSE,152,19,12,14,WS_GROUP
+    DEFPUSHBUTTON   "...",ID_MIC_ON_BROWSE,152,49,12,14,WS_GROUP
 END
 
 
@@ -218,7 +234,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -236,7 +252,7 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_APP_TITLE           "MicMute"
     IDS_STARTED             "Запуск"
@@ -248,16 +264,18 @@ BEGIN
     IDS_MICON2              "MicMute - микр. вкл."
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_TRANSMWAR           "Для режима передатчика должна быть назначена одна клавиша.\nИспользуйте меню ""Настройка сочетания клавиш""."
     IDS_INFOCAPTION         "Информация MicMute"
     IDS_ERRORCAPTION        "Ошибка MicMute"
     IDS_NOHOOK              "Библиотека key_hook.dll не найдена или не может быть загружена"
     IDS_BADHOOK             "Библиотека key_hook.dll повреждена или не предоставляет требуемых функций"
+    IDS_SELECT_AUDIO_FILE   "Выбрать звуковой файл"
+    IDS_AUDIO_FILE_FILTER   "Wave файлы\n*.wav\nMp3 файлы\n*.mp3\nВсе файлы\n*.*\n\n"
 END
 
-#endif    // Russian resources
+#endif    // Russian (Russia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

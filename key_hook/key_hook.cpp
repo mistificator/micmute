@@ -94,7 +94,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
 		Event = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
-//		MessageBox(0, _T("key_hook.dll attached"), _T("message"), MB_OK);
 		map_handle = CreateFileMapping(
 			INVALID_HANDLE_VALUE,    // use paging file
 			NULL,                    // default security 
@@ -115,7 +114,6 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		{
 			ZeroMemory(kstruct, sizeof(KeyHook_Struct));
 			kstruct->enabled = true;
-//			MessageBox(0, _T("key_hook!"), _T(""), MB_OK);
 		}
 	}
 	if (ul_reason_for_call == DLL_PROCESS_DETACH)
