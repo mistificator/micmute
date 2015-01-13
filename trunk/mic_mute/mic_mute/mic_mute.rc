@@ -18,10 +18,8 @@
 // Neutral (Default) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEUD)
-#ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 #pragma code_page(1251)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -29,8 +27,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,7,2
- PRODUCTVERSION 0,1,7,2
+ FILEVERSION 0,1,8,0
+ PRODUCTVERSION 0,1,8,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -47,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.7.2"
+            VALUE "FileVersion", "MicMute 0.1.8.0"
             VALUE "InternalName", "MicMute"
-            VALUE "LegalCopyright", "© 2010-2014 Mist Poryvaev"
+            VALUE "LegalCopyright", "© 2010-2015 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.7.2"
+            VALUE "ProductVersion", "MicMute 0.1.8.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -85,7 +83,7 @@ IDI_MIC_MUTE_RED        ICON                    "mic_mute_red.ico"
 // Menu
 //
 
-IDC_MIC_MUTE MENU 
+IDC_MIC_MUTE MENU
 BEGIN
     POPUP "&File"
     BEGIN
@@ -105,6 +103,7 @@ BEGIN
         BEGIN
             MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
             MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+            MENUITEM "Select audio files",          IDM_SELECT_AUDIO_FILES
         END
         MENUITEM SEPARATOR
         MENUITEM "Start muted",                 IDM_START_MUTED
@@ -116,7 +115,7 @@ BEGIN
     END
 END
 
-IDC_TRAY_MIC_MUTE MENU 
+IDC_TRAY_MIC_MUTE MENU
 BEGIN
     POPUP "Tray Menu"
     BEGIN
@@ -128,6 +127,7 @@ BEGIN
         BEGIN
             MENUITEM "Show notifications",          IDM_SHOW_NOTIFICATIONS
             MENUITEM "Sound signal",                IDM_SOUND_SIGNAL
+            MENUITEM "Select audio files",          IDM_SELECT_AUDIO_FILES
         END
         MENUITEM SEPARATOR
         MENUITEM "Start muted",                 IDM_START_MUTED
@@ -145,7 +145,7 @@ END
 // Accelerator
 //
 
-IDC_MIC_MUTE ACCELERATORS 
+IDC_MIC_MUTE ACCELERATORS
 BEGIN
     "/",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
     "?",            IDM_ABOUT,              ASCII,  ALT, NOINVERT
@@ -163,8 +163,8 @@ CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.7.2",IDC_STATIC,49,5,119,8,SS_NOPREFIX
-    LTEXT           "© 2010-2014 Mist Poryvaev",IDC_STATIC,49,15,119,8
+    LTEXT           "MicMute 0.1.8.0",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "© 2010-2015 Mist Poryvaev",IDC_STATIC,49,15,119,8
     DEFPUSHBUTTON   "Ok",IDOK,188,5,37,11,WS_GROUP
     EDITTEXT        IDC_DONATE,49,41,176,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "Donate BTC:",IDC_STATIC,4,42,42,8
@@ -177,10 +177,26 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYS
 CAPTION "Setup shortcut"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
     LTEXT           "Press one or two keys",IDC_STATIC,49,10,112,8,SS_NOPREFIX
     EDITTEXT        IDC_SHORTCUT,48,19,101,14,ES_AUTOHSCROLL | ES_READONLY
     DEFPUSHBUTTON   "Ok",IDOK,166,6,37,11,WS_GROUP
+    ICON            IDI_SHORTCUT,IDC_MYICON,14,9,20,20
+END
+
+IDD_SELECT_AUDIO_FILES DIALOGEX 22, 17, 211, 71
+STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
+CAPTION "Select audio files"
+FONT 10, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,18,16
+    LTEXT           "Mic off sound",IDC_STATIC,49,10,112,8,SS_NOPREFIX
+    EDITTEXT        IDC_MIC_OFF,48,19,101,14,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
+    DEFPUSHBUTTON   "Ok",IDOK,166,6,37,11,WS_GROUP
+    ICON            IDI_MIC_MUTE_RED,IDC_MYICON2,14,39,18,16
+    LTEXT           "Mic on sound",IDC_STATIC,49,40,112,8,SS_NOPREFIX
+    EDITTEXT        IDC_MIC_ON,48,49,101,14,ES_AUTOHSCROLL,WS_EX_ACCEPTFILES
+    DEFPUSHBUTTON   "...",ID_MIC_OFF_BROWSE,152,19,12,14,WS_GROUP
+    DEFPUSHBUTTON   "...",ID_MIC_ON_BROWSE,152,49,12,14,WS_GROUP
 END
 
 
@@ -218,7 +234,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -230,7 +246,13 @@ BEGIN
 
     IDD_SETUP_SHORTCUT, DIALOG
     BEGIN
-        RIGHTMARGIN, 199
+        RIGHTMARGIN, 209
+    END
+
+    IDD_SELECT_AUDIO_FILES, DIALOG
+    BEGIN
+        RIGHTMARGIN, 210
+        BOTTOMMARGIN, 69
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -241,7 +263,7 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_APP_TITLE           "MicMute"
     IDS_STARTED             "Started"
@@ -251,15 +273,13 @@ BEGIN
     IDS_MICOFF2             "MicMute - Mic Off"
     IDC_MIC_MUTE            "MIC_MUTE"
     IDS_MICON2              "MicMute - Mic On"
-END
-
-STRINGTABLE 
-BEGIN
     IDS_TRANSMWAR           "Keyboard shortcut must consist of only one key for transmitter mode.\nUse ""Setup shortcut"" menu item to change shortcut."
     IDS_INFOCAPTION         "MicMute information"
     IDS_ERRORCAPTION        "MicMute error"
     IDS_NOHOOK              "key_hook.dll not found or cannot be loaded"
     IDS_BADHOOK             "key_hook.dll is corrupted or doesn't provide requested functions"
+	IDS_AUDIO_FILE_FILTER	"Wave files\n*.wav\nMp3 files\n*.mp3\nAll files\n*.*\n\n"
+	IDS_SELECT_AUDIO_FILE	"Select audio file"
 END
 
 #endif    // Neutral (Default) resources

@@ -23,8 +23,12 @@ INT ShowNotifications = 0;
 INT SoundSignal = 0;
 HICON IconBlack = 0, IconRed = 0;
 
-WNDPROC edit_proc = NULL;
+WNDPROC shortcut_edit_proc = NULL;
 UINT prev_code = 0;
+
+TCHAR szMicOnSound[MAX_PATH];
+TCHAR szMicOffSound[MAX_PATH];
+TCHAR szMediaPath[MAX_PATH], szMicOnDefault[1024], szMicOffDefault[1024];
 
 HMENU DevicesMenu = NULL;
 #define DEVICE_FIRST_ID 50000
@@ -36,6 +40,7 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	SetupShortcut(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	SelectAudioFiles(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	ShortcutEditProc(HWND, UINT, WPARAM, LPARAM);
 VOID				MuteToggle(HWND hWnd);
 VOID				StartMutedToggle(HWND hWnd);
@@ -165,6 +170,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
 	IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
+
+	GetModuleFileName(NULL, szMediaPath, MAX_PATH);
+	PathRemoveFileSpec(szMediaPath);
+	StringCchCat(szMediaPath, MAX_PATH, _T("\\"));
+	StringCchCopy(szMicOnDefault, 1024, szMediaPath);
+	StringCchCat(szMicOnDefault, MAX_PATH, _T("beep750.wav"));
+	StringCchCopy(szMicOffDefault, 1024, szMediaPath);
+	StringCchCat(szMicOffDefault, MAX_PATH, _T("beep300.wav"));
 
 	ReadIni();
 
@@ -385,6 +398,21 @@ VOID ReadIni(VOID)
 	GetPrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_arun);
 
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnDefault, szMicOnSound, MAX_PATH, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefault, szMicOffSound, MAX_PATH, szPath);
+
+	size_t _len;
+	StringCchLength(szMicOnSound, MAX_PATH, & _len);
+	if (_len == 0)
+	{
+		StringCchCopy(szMicOnSound, MAX_PATH, szMicOnDefault);
+	}
+	StringCchLength(szMicOffSound, MAX_PATH, & _len);
+	if (_len == 0)
+	{
+		StringCchCopy(szMicOffSound, MAX_PATH, szMicOffDefault);
+	}
+
 	StartMuted = (_start_muted != 0);
 	Autorun = (_arun != 0);
 	SetShortcut(_count, _key1, _key2);
@@ -426,6 +454,10 @@ VOID WriteIni(VOID)
 	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
 	_stprintf(_str, _T("%i"), _arun);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
+
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnSound, szPath);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffSound, szPath);
+
 }
 
 VOID MuteToggle(HWND hWnd)
@@ -433,6 +465,9 @@ VOID MuteToggle(HWND hWnd)
 	HMENU menu = GetMenu(hWnd);
 	DWORD mute_state;
 	DWORD PrevVolume;
+
+	mciSendString(_T("close MicOnSound"), NULL, 0, 0);			
+	mciSendString(_T("close MicOffSound"), NULL, 0, 0);			
 
 	NOTIFYICONDATA nid;
 	nid.cbSize = sizeof(nid);
@@ -470,7 +505,15 @@ VOID MuteToggle(HWND hWnd)
 		IsMuted = true;
 		if (SoundSignal)
 		{
-			Beep(300, 250);
+			size_t _len = 0;
+			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			TCHAR _open_str[1024];
+			_open_str[0] = _T('');
+			StringCchCat(_open_str, 1024, _T("open \""));
+			StringCchCat(_open_str, 1024, szMicOffSound);
+			StringCchCat(_open_str, 1024, _T("\" type mpegvideo alias MicOffSound"));
+			mciSendString(_open_str, NULL, 0, 0); 
+			mciSendString(_T("play MicOffSound"), NULL, 0, 0);
 		}
 		SetIcon(hWnd, IconBlack);
 		nid.hIcon = IconBlack;
@@ -489,7 +532,15 @@ VOID MuteToggle(HWND hWnd)
 		IsMuted = false;
 		if (SoundSignal)
 		{
-			Beep(750, 250);
+			size_t _len = 0;
+			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			TCHAR _open_str[1024];
+			_open_str[0] = _T('');
+			StringCchCat(_open_str, 1024, _T("open \""));
+			StringCchCat(_open_str, 1024, szMicOnSound);
+			StringCchCat(_open_str, 1024, _T("\" type mpegvideo alias MicOnSound"));
+			mciSendString(_open_str, NULL, 0, 0); 
+			mciSendString(_T("play MicOnSound"), NULL, 0, 0);
 		}
 		SetIcon(hWnd, IconRed);
 		nid.hIcon = IconRed;
@@ -729,6 +780,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			break;
 		case IDM_SETUP_SHORTCUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
+			break;
+		case IDM_SELECT_AUDIO_FILES:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_SELECT_AUDIO_FILES), hWnd, SelectAudioFiles);
+			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
@@ -807,7 +862,7 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	case WM_INITDIALOG:
 		SetEnabled(false);
 		prev_code = 0;
-		edit_proc = (WNDPROC)(size_t)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
+		shortcut_edit_proc = (WNDPROC)(size_t)GetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC);
 		SetWindowLongPtr(GetDlgItem(hDlg, IDC_SHORTCUT), GWLP_WNDPROC, (LONG)(LONG_PTR)ShortcutEditProc);
 		return (INT_PTR)TRUE;
 	case WM_SHOWWINDOW:
@@ -819,6 +874,73 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 			EndDialog(hDlg, LOWORD(wParam));
 			SetEnabled(true);
 			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+
+	return (INT_PTR)FALSE;
+}
+
+INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{	
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		SetEnabled(false);
+		return (INT_PTR)TRUE;
+	case WM_SHOWWINDOW:
+		SetWindowText(GetDlgItem(hDlg, IDC_MIC_ON), szMicOnSound);		
+		SetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF), szMicOffSound);		
+		break;
+	case WM_COMMAND:
+		if ((LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL))
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			SetEnabled(true);
+			GetWindowText(GetDlgItem(hDlg, IDC_MIC_ON), szMicOnSound, MAX_PATH);
+			GetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF), szMicOffSound, MAX_PATH);
+
+			size_t _len;
+			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			if (_len == 0)
+			{
+				StringCchCopy(szMicOnSound, MAX_PATH, szMicOnDefault);
+			}
+			StringCchLength(szMicOffSound, MAX_PATH, & _len);
+			if (_len == 0)
+			{
+				StringCchCopy(szMicOffSound, MAX_PATH, szMicOffDefault);
+			}
+
+			return (INT_PTR)TRUE;
+		}
+		else
+		if (LOWORD(wParam) == ID_MIC_ON_BROWSE || LOWORD(wParam) == ID_MIC_OFF_BROWSE)
+		{
+			TCHAR _filename[MAX_PATH], _filefilter[1024], _title[1024];
+			LoadString(hInst, IDS_AUDIO_FILE_FILTER, _filefilter, sizeof(_filefilter) / sizeof(_filefilter[0]));
+			for (int i = 0; i < sizeof(_filefilter) / sizeof(_filefilter[0]); i++)
+			{
+				if (_filefilter[i] == _T('\n'))
+				{
+					_filefilter[i] = _T('\0');
+				}
+			}
+			LoadString(hInst, IDS_SELECT_AUDIO_FILE, _title, sizeof(_title) / sizeof(_title[0]));
+			GetWindowText(GetDlgItem(hDlg, LOWORD(wParam) == ID_MIC_ON_BROWSE ? IDC_MIC_ON : IDC_MIC_OFF), _filename, MAX_PATH);
+			OPENFILENAME ofn;
+			ZeroMemory(& ofn, sizeof(OPENFILENAME));
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = _filefilter;
+			ofn.lpstrFile = _filename;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrTitle = _title;
+			ofn.Flags = OFN_FILEMUSTEXIST;
+			if (GetOpenFileName(& ofn))
+			{
+				SetWindowText(GetDlgItem(hDlg, LOWORD(wParam) == ID_MIC_ON_BROWSE ? IDC_MIC_ON : IDC_MIC_OFF), _filename);	
+			}
 		}
 		break;
 	}
@@ -969,7 +1091,7 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		}
 		break;
 	}
-	return CallWindowProc(edit_proc, hEdit, message, wParam, lParam);
+	return CallWindowProc(shortcut_edit_proc, hEdit, message, wParam, lParam);
 }
 
 VOID SetIcon(HWND hwnd, HICON hIcon)

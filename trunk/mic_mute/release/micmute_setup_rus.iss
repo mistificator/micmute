@@ -2,10 +2,10 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "MicMute"
-#define MyAppVersion "0.1.7.2"
 #define MyAppPublisher "Мист Порываев"
 #define MyAppURL "https://micmute.googlecode.com"
 #define MyAppExeName "mic_mute_rus.exe"
+#define MyAppVersion GetFileVersion(MyAppExeName)
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
@@ -32,6 +32,8 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 [Files]
 Source: ".\key_hook.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\mic_mute_rus.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\beep300.wav"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\beep750.wav"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
