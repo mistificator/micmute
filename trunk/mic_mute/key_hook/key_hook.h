@@ -9,4 +9,5 @@ extern "C"
 	typedef  void (__stdcall * _GetShortCut)(int *, int *, int *);
 	typedef  void (__stdcall * _SetEnabled)(bool);
 	typedef  void (__stdcall * _SetMode)(int);
+	typedef  unsigned int (__stdcall * _GetVkCode)(void);
 };

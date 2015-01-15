@@ -16,9 +16,16 @@ static HANDLE Event = 0;
 #define KEY_REPEAT_COUNT (lParam & 0xffff)
 #define KEY_IS_ALT ((lParam & (1 << 29)) == (1 << 29))
 
+#define KEY_WAS_UP_LL (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+#define KEY_WAS_DOWN_LL (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+#define KEY_BEING_PRESSED_LL (hs->flags & (1 << 7)) == 0)
+#define KEY_BEING_RELEASED_LL ((hs->flags & (1 << 7)) == (1 << 7))
+#define KEY_IS_ALT_LL ((hs->flags & (1 << 5)) == (1 << 5))
+
 struct KeyHook_Struct
 {
 	WPARAM prev_code;
+	UINT vkCode;
 	int keys_count;
 	int key1;
 	int key2;
@@ -31,27 +38,33 @@ HANDLE map_handle;
 
 extern "C"
 {
-	__declspec(dllexport) LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+	__declspec(dllexport) LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 	{
-		if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_STANDART) && (nCode >= 0) && KEY_WAS_UP)
+		if (nCode == HC_ACTION)
 		{
-			if (((kstruct->prev_code == kstruct->key1) && (wParam == kstruct->key2) && (kstruct->keys_count == 2)) || ((wParam == kstruct->key1) && (kstruct->keys_count == 1))) 
+			KBDLLHOOKSTRUCT * hs = (KBDLLHOOKSTRUCT *)lParam;
+			kstruct->vkCode = hs->vkCode;
+			if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_STANDART) && KEY_WAS_UP_LL)
 			{
-				SetEvent(Event);
-				kstruct->prev_code = 0;
+				if (((kstruct->prev_code == kstruct->key1) && (hs->vkCode == kstruct->key2) && (kstruct->keys_count == 2)) || ((hs->vkCode == kstruct->key1) && (kstruct->keys_count == 1))) 
+				{
+					SetEvent(Event);
+					kstruct->prev_code = 0;
+				}
+				else
+				{
+					kstruct->prev_code = hs->vkCode;
+				}
 			}
-			else
+			if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_TRANSMITTER) && (kstruct->keys_count == 1))
 			{
-				kstruct->prev_code = wParam;
+				if (hs->vkCode == kstruct->key1 && ((KEY_WAS_UP_LL && kstruct->prev_code == 0) || (KEY_WAS_DOWN_LL && kstruct->prev_code != 0)))
+				{
+					SetEvent(Event);
+					kstruct->prev_code = KEY_WAS_DOWN_LL ? 0 : hs->vkCode;
+				}
 			}
-		}
-		if (kstruct->enabled && (kstruct->mic_mode == MIC_MODE_TRANSMITTER) && (nCode >= 0) && (kstruct->keys_count == 1))
-		{
-			if ((wParam == kstruct->key1) && ((KEY_BEING_PRESSED && KEY_WAS_UP) || (KEY_BEING_RELEASED && KEY_WAS_DOWN)))
-			{
-				SetEvent(Event);
-				kstruct->prev_code = 0;
-			}
+			return 0;
 		}
 		return CallNextHookEx(0, nCode, wParam,lParam);
 	}
@@ -83,6 +96,10 @@ extern "C"
 	__declspec(dllexport) void __stdcall SetMode(int _mode)
 	{
 		kstruct->mic_mode = _mode;
+	}
+	__declspec(dllexport) UINT __stdcall GetVkCode()
+	{
+		return kstruct->vkCode;
 	}
 };
 

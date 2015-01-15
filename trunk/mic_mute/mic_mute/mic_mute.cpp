@@ -9,6 +9,7 @@ _SetShortCut	SetShortcut;
 _SetEnabled		SetEnabled;
 _GetShortCut	GetShortcut;
 _SetMode		SetMode;
+_GetVkCode		GetVkCode;
 
 #define MAX_LOADSTRING 100
 
@@ -133,7 +134,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	MSG msg;
 	HACCEL hAccelTable;
-	HOOKPROC hkprc; 
+	HOOKPROC hLLKeybProc; 
 	static HINSTANCE hinstDLL; 
 	static HHOOK hhook; 
 
@@ -149,13 +150,14 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
-	hkprc = (HOOKPROC)GetProcAddress(hinstDLL, "_KeyboardProc@12"); 
+	hLLKeybProc = (HOOKPROC)GetProcAddress(hinstDLL, "_LowLevelKeyboardProc@12"); 
 	SetShortcut = (_SetShortCut)GetProcAddress(hinstDLL, "_SetShortcut@12");
 	GetShortcut = (_GetShortCut)GetProcAddress(hinstDLL, "_GetShortcut@12");
 	SetEnabled = (_SetEnabled)GetProcAddress(hinstDLL, "_SetEnabled@4");
 	SetMode = (_SetMode)GetProcAddress(hinstDLL, "_SetMode@4");
+	GetVkCode = (_GetVkCode)GetProcAddress(hinstDLL, "_GetVkCode@0");
 
-	if (!hkprc || !SetShortcut || !GetShortcut || !SetEnabled || !SetMode)
+	if (!hLLKeybProc || !SetShortcut || !GetShortcut || !SetEnabled || !SetMode || !GetVkCode)
 	{
 		TCHAR warn[1024];
 		LoadString(hInstance, IDS_BADHOOK, warn, sizeof(warn) / sizeof(warn[0]));
@@ -165,7 +167,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
-	hhook = SetWindowsHookEx(WH_KEYBOARD,hkprc,hinstDLL,NULL); 
+	hhook = SetWindowsHookEx(WH_KEYBOARD_LL,hLLKeybProc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
 	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
@@ -205,7 +207,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	NOTIFYICONDATA nid;
 	ZeroMemory(&nid, sizeof(nid));
-	nid.cbSize = sizeof(nid);
+	nid.cbSize = NOTIFYICONDATA_V2_SIZE;
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
 	nid.hIcon = IconBlack;
@@ -679,8 +681,8 @@ VOID TransmitterToggle(HWND hWnd)
 		MicMode = MIC_MODE_TRANSMITTER;
 		EnableMenuItem(menu, IDM_MUTE, MF_BYCOMMAND | MF_GRAYED);
 		EnableMenuItem(TrayMenu, IDM_MUTE, MF_BYCOMMAND | MF_GRAYED);
-		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
-		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
+//		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
+//		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_GRAYED);
 		if (IsMuted == false)
 		{
 			MuteToggle(hWnd);
@@ -692,8 +694,8 @@ VOID TransmitterToggle(HWND hWnd)
 		MicMode = MIC_MODE_STANDART;
 		EnableMenuItem(menu, IDM_MUTE, MF_BYCOMMAND | MF_ENABLED);
 		EnableMenuItem(TrayMenu, IDM_MUTE, MF_BYCOMMAND | MF_ENABLED);
-		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
-		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
+//		EnableMenuItem(menu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
+//		EnableMenuItem(TrayMenu, IDM_SETUP_SHORTCUT, MF_BYCOMMAND | MF_ENABLED);
 	}
 	CheckMenuItem(TrayMenu, IDM_TRANSMITTER_MODE, trns_state);	
 	SetMode(MicMode);
@@ -969,8 +971,8 @@ TCHAR * KeyToName(UINT _code)
 	case VK_ESCAPE: return _T("Esc");
 
 	case VK_SPACE: return _T("Space");
-	case VK_PRIOR: return _T("Prior");
-	case VK_NEXT : return _T("Next");
+	case VK_PRIOR: return _T("Page Up");
+	case VK_NEXT : return _T("Page Down");
 	case VK_END: return _T("End");
 	case VK_HOME: return _T("Home");
 	case VK_LEFT: return _T("Left");
@@ -1034,14 +1036,37 @@ TCHAR * KeyToName(UINT _code)
 
 	case VK_NUMLOCK  : return _T("NumLock");
 	case VK_SCROLL   : return _T("ScrollLock");
-	default: _str[0] = (TCHAR)_code;
+
+	case VK_LSHIFT: return _T("Left Shift");
+	case VK_RSHIFT: return _T("Right Shift");
+	case VK_LCONTROL: return _T("Left Ctrl");
+	case VK_RCONTROL: return _T("Right Ctrl");
+	case VK_LMENU: return _T("Left Alt");
+	case VK_RMENU: return _T("Right Alt");
+
+	default: 
+		{
+			BYTE ks[256];
+			ZeroMemory(ks, sizeof(ks));
+			ks[0] = 1;
+			UINT _scan_code = MapVirtualKey(_code, MAPVK_VK_TO_VSC);
+#ifdef _UNICODE
+			ToUnicode(_code, _scan_code, ks, _str, 32, 0);
+#else
+			ToAscii(_code, _scan_code,  ks, _str, 0);
+#endif
+			if (_str[0] == _T('\0'))
+			{
+				_stprintf(_str, _T("Code %i"), _code);
+			}
+		}
 	}
 	return _str;
 }
 
 LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	UINT _code = 0;
+	UINT _code = 0, _scan_code = 0;
 	static TCHAR _str[1024] = _T("");
 	TCHAR _key1[32] = _T(""), _key2[32] = _T("");
 	UINT _count = 0;
@@ -1068,8 +1093,8 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		break;
 	case WM_SYSKEYDOWN:
 	case WM_KEYDOWN:
-		_code = (UINT)wParam;
-		if ((prev_code == 0) || (prev_code == _code))
+		_code = GetVkCode();
+		if ((prev_code == 0) || (prev_code == _code) || (MicMode == MIC_MODE_TRANSMITTER))
 		{
 			StringCchCopy(_key1, 32, KeyToName(_code));
 			StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
