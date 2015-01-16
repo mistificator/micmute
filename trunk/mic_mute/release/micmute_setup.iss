@@ -7,6 +7,8 @@
 #define MyAppExeName "mic_mute.exe"
 #define MyAppVersion GetFileVersion(MyAppExeName)
 
+#define MyAppExeNameRus "mic_mute_rus.exe"
+
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
 ; Do not use the same AppId value in installers for other applications.
@@ -28,19 +30,26 @@ SolidCompression=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Files]
 Source: ".\key_hook.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\mic_mute.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Languages: english
+Source: ".\{#MyAppExeNameRus}"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
 Source: ".\beep300.wav"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\beep750.wav"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Languages: english
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeNameRus}"; Languages: russian
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Languages: english
+Filename: "{app}\{#MyAppExeNameRus}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent; Languages: russian
 
+[UninstallRun]
+Filename: "cmd.exe"; Parameters: "/c ""taskkill /im ""{#MyAppExeName}"" /t /f"""; Flags: runhidden; Languages: english
+Filename: "cmd.exe"; Parameters: "/c ""taskkill /im ""{#MyAppExeNameRus}"" /t /f"""; Flags: runhidden; Languages: russian
