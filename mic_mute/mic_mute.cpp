@@ -59,6 +59,17 @@ CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 typedef BOOL (CALLBACK *LPDSENUMCALLBACKW)(LPGUID, LPCWSTR, LPCWSTR, LPVOID);
 typedef HRESULT (WINAPI * DirectSoundCaptureEnumerateW_t)(__in LPDSENUMCALLBACKW, __in_opt LPVOID);
 
+HANDLE HookEvent = NULL;
+HANDLE StopEvent = NULL;
+HANDLE Thread = NULL;
+HWND AppHWnd = NULL;
+BOOL StartMuted = FALSE;
+BOOL Autorun = FALSE;
+UINT SelectedDevice = 0;
+HANDLE SingleControl = NULL;
+int MicMode = MIC_MODE_STANDART;
+bool IsMuted = false;
+
 BOOL CALLBACK EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx)
 {
 	HMENU menu = (HMENU)ctx;
@@ -79,20 +90,14 @@ BOOL CALLBACK EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID c
 		mii.dwTypeData = new TCHAR[mii.cch + 1];
 		StringCchCopy(mii.dwTypeData, mii.cch + 1, descr);
 		InsertMenuItem(menu, _idx, TRUE, &mii);
+		if (SelectedDevice == (UINT)-1)
+		{
+			CheckMenuItem(menu, DEVICE_FIRST_ID + _idx, MF_CHECKED);
+			SelectedDevice = _idx;
+		}
 	}
 	return TRUE;
 }
-
-HANDLE HookEvent = NULL;
-HANDLE StopEvent = NULL;
-HANDLE Thread = NULL;
-HWND AppHWnd = NULL;
-BOOL StartMuted = FALSE;
-BOOL Autorun = FALSE;
-UINT SelectedDevice = 0;
-HANDLE SingleControl = NULL;
-int MicMode = MIC_MODE_STANDART;
-bool IsMuted = false;
 
 DWORD WINAPI ThreadProc( LPVOID lpParam ) 
 {
@@ -102,6 +107,18 @@ DWORD WINAPI ThreadProc( LPVOID lpParam )
 		{
 			ResetEvent(HookEvent);
 			MuteToggle(HWND(lpParam));
+		}
+		else
+		if (IsMuted)
+		{
+			if (mixer_mic_in.GetVolume() > 0)
+			{
+				mixer_mic_in.SetVolume(0);
+			}
+			if (!mixer_mic_in.GetMute())
+			{
+				mixer_mic_in.SetMute(TRUE);
+			}
 		}
 		if (WaitForSingleObject(StopEvent, 0) == WAIT_OBJECT_0)
 		{
@@ -205,12 +222,22 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	TrayMsg = RegisterWindowMessage(_T("Tray!"));
 
+	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MIC_MUTE));
+
+	MENUITEMINFO mii;
+	DevicesMenu = CreateMenu();
+
+	CoInitialize(NULL);
+	DirectSoundCaptureEnumerate(& EnumCallback, DevicesMenu);
+
+	mixer_mic_in.SelectDevice(SelectedDevice);
+
 	NOTIFYICONDATA nid;
 	ZeroMemory(&nid, sizeof(nid));
 	nid.cbSize = NOTIFYICONDATA_V2_SIZE;
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
-	nid.hIcon = IconBlack;
+	nid.hIcon = (StartMuted || mixer_mic_in.GetVolume() == 0 || mixer_mic_in.GetMute()) ? IconBlack : IconRed;
 	nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	nid.uCallbackMessage = TrayMsg;
 	nid.uTimeout = 5000;
@@ -228,15 +255,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	StringCchCopy(nid.szInfo, 256, _tooltip_text);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MIC_MUTE));
-
-
-	MENUITEMINFO mii;
-	DevicesMenu = CreateMenu();
-
-	CoInitialize(NULL);
-	DirectSoundCaptureEnumerate(& EnumCallback, DevicesMenu);
-
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
 	TrayMenu = GetSubMenu(hmenu, 0);
 	SetMenuDefaultItem(TrayMenu, IDM_MUTE, 0);
@@ -253,14 +271,33 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	InsertMenuItem(TrayMenu, 3, TRUE, &mii);
 	CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, SelectedDevice + DEVICE_FIRST_ID, MF_BYCOMMAND);
 	
-	mixer_mic_in.SelectDevice(SelectedDevice);
-
-	BOOL SavedMute = mixer_mic_in.GetMute();
-
-	if (StartMuted)
+	if (SavedVolume == 0)
 	{
-		StartMutedToggle(AppHWnd);
-		MuteToggle(AppHWnd);
+		SavedVolume = mixer_mic_in.GetVolume();
+	}
+
+	if (StartMuted || mixer_mic_in.GetVolume() == 0 || mixer_mic_in.GetMute())
+	{
+		if (mixer_mic_in.GetVolume() > 0 && SavedVolume != mixer_mic_in.GetVolume())
+		{
+			SavedVolume = mixer_mic_in.GetVolume();
+		}
+		if (StartMuted)
+		{
+			StartMutedToggle(AppHWnd);
+		}
+		if (mixer_mic_in.GetVolume() > 0 || !mixer_mic_in.GetMute())
+		{
+			MuteToggle(AppHWnd);
+		}
+		else
+		{
+			mixer_mic_in.SetVolume(0);
+			mixer_mic_in.SetMute(TRUE);
+			IsMuted = true;
+			CheckMenuItem(GetMenu(AppHWnd), IDM_MUTE, MF_CHECKED);
+			CheckMenuItem(TrayMenu, IDM_MUTE, MF_CHECKED);
+		}
 	}
 
 	if (ShowNotifications)
@@ -293,10 +330,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		}
 	}
 
-//	WriteIni();
-
-	mixer_mic_in.SetVolume(SavedVolume); 
-	mixer_mic_in.SetMute(SavedMute);
+	if (!IsMuted && mixer_mic_in.GetVolume() > 0 && SavedVolume != mixer_mic_in.GetVolume())
+	{
+		SavedVolume = mixer_mic_in.GetVolume();
+	}
+	WriteIni();
 
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 
@@ -378,18 +416,25 @@ VOID ReadIni(VOID)
 	CreateDirectory(szPath, NULL);
 	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
 
+	/*
+	if (GetFileAttributes(szPath) == INVALID_FILE_ATTRIBUTES)
+	{
+		DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), AppHWnd, About);
+	}
+	*/
+
 	TCHAR _str[1024];
 	int _count, _key1, _key2, _start_muted, _arun;
 
 	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Count"), _T("2"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_count);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("92"), _str, 1024, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key1"), _T("162"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_key1);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("17"), _str, 1024, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("ShortCut_Key2"), _T("164"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_key2);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("StartMuted"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_start_muted);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("0"), _str, 1024, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("Device"), _T("-1"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &SelectedDevice);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicMode"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &MicMode);
@@ -399,6 +444,8 @@ VOID ReadIni(VOID)
 	_stscanf(_str, _T("%i"), &SoundSignal);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &_arun);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("SavedVolume"), _T("0"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &SavedVolume);
 
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnDefault, szMicOnSound, MAX_PATH, szPath);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefault, szMicOffSound, MAX_PATH, szPath);
@@ -456,6 +503,8 @@ VOID WriteIni(VOID)
 	WritePrivateProfileString(_T("Mic_Mute"), _T("SoundSignal"), _str, szPath);
 	_stprintf(_str, _T("%i"), _arun);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
+	_stprintf(_str, _T("%i"), SavedVolume);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("SavedVolume"), _str, szPath);
 
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnSound, szPath);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffSound, szPath);
@@ -844,7 +893,12 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		else
 		if (LOWORD(wParam) == IDC_UPDATES)
 		{
-			ShellExecute(hDlg, L"open", L"https://code.google.com/p/micmute/downloads/list", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, L"open", L"https://sourceforge.net/projects/micmute", NULL, NULL, SW_SHOWNORMAL);
+		}
+		else
+		if (LOWORD(wParam) == IDC_PAYPAL)
+		{
+			ShellExecute(hDlg, L"open", L"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XTQVLZEHNQ4E8", NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)

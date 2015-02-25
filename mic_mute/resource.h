@@ -30,12 +30,13 @@
 #define IDS_ERRORCAPTION                134
 #define IDS_NOHOOK                      135
 #define IDS_BADHOOK                     136
-#define IDS_SELECT_AUDIO_FILE			137
-#define IDS_AUDIO_FILE_FILTER			138
+#define IDS_SELECT_AUDIO_FILE           137
+#define IDS_AUDIO_FILE_FILTER           138
 #define IDC_MAIL                        1003
 #define IDC_DONATE                      1004
 #define IDC_UPDATES                     1005
 #define IDC_MIC_OFF                     1006
+#define IDC_PAYPAL                      1006
 #define IDC_MIC_ON                      1007
 #define IDM_MUTE                        32771
 #define IDC_TRAY_MIC_MUTE               32772

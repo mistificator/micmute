@@ -27,8 +27,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,8,0
- PRODUCTVERSION 0,1,8,0
+ FILEVERSION 0,1,8,1
+ PRODUCTVERSION 0,1,8,1
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.8.0"
+            VALUE "FileVersion", "MicMute 0.1.8.1"
             VALUE "InternalName", "MicMute"
             VALUE "LegalCopyright", "© 2010-2015 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.8.0"
+            VALUE "ProductVersion", "MicMute 0.1.8.1"
         END
     END
     BLOCK "VarFileInfo"
@@ -157,19 +157,20 @@ END
 // Dialog
 //
 
-IDD_ABOUTBOX DIALOGEX 22, 17, 230, 60
+IDD_ABOUTBOX DIALOGEX 22, 17, 231, 73
 STYLE DS_SETFONT | DS_MODALFRAME | DS_3DLOOK | DS_FIXEDSYS | WS_CAPTION | WS_SYSMENU
 CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.8.0",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "MicMute 0.1.8.1 Beta",IDC_STATIC,49,5,119,8,SS_NOPREFIX
     LTEXT           "© 2010-2015 Mist Poryvaev",IDC_STATIC,49,15,119,8
-    DEFPUSHBUTTON   "Ok",IDOK,188,5,37,11,WS_GROUP
-    EDITTEXT        IDC_DONATE,49,41,176,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "Donate BTC:",IDC_STATIC,4,42,42,8
-    PUSHBUTTON      "Feedback mail",IDC_MAIL,49,27,85,11
-    PUSHBUTTON      "Check for updates",IDC_UPDATES,140,27,85,11
+    DEFPUSHBUTTON   "Ok",IDOK,189,5,37,11,WS_GROUP
+    EDITTEXT        IDC_DONATE,50,54,176,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Donate BTC:",IDC_STATIC,4,56,42,8
+    PUSHBUTTON      "Feedback mail",IDC_MAIL,141,40,85,11
+    PUSHBUTTON      "Check for updates",IDC_UPDATES,141,27,85,11
+    PUSHBUTTON      "Donate via Paypal",IDC_PAYPAL,49,27,85,11
 END
 
 IDD_SETUP_SHORTCUT DIALOGEX 22, 17, 210, 41
@@ -239,9 +240,9 @@ BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
         LEFTMARGIN, 4
-        RIGHTMARGIN, 225
+        RIGHTMARGIN, 226
         TOPMARGIN, 5
-        BOTTOMMARGIN, 55
+        BOTTOMMARGIN, 68
     END
 
     IDD_SETUP_SHORTCUT, DIALOG
@@ -273,13 +274,17 @@ BEGIN
     IDS_MICOFF2             "MicMute - Mic Off"
     IDC_MIC_MUTE            "MIC_MUTE"
     IDS_MICON2              "MicMute - Mic On"
+END
+
+STRINGTABLE
+BEGIN
     IDS_TRANSMWAR           "Keyboard shortcut must consist of only one key for transmitter mode.\nUse ""Setup shortcut"" menu item to change shortcut."
     IDS_INFOCAPTION         "MicMute information"
     IDS_ERRORCAPTION        "MicMute error"
     IDS_NOHOOK              "key_hook.dll not found or cannot be loaded"
     IDS_BADHOOK             "key_hook.dll is corrupted or doesn't provide requested functions"
-	IDS_AUDIO_FILE_FILTER	"Wave files\n*.wav\nMp3 files\n*.mp3\nAll files\n*.*\n\n"
-	IDS_SELECT_AUDIO_FILE	"Select audio file"
+    IDS_SELECT_AUDIO_FILE   "Select audio file"
+    IDS_AUDIO_FILE_FILTER   "Wave files\n*.wav\nMp3 files\n*.mp3\nAll files\n*.*\n\n"
 END
 
 #endif    // Neutral (Default) resources
