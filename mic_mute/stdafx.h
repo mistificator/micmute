@@ -12,7 +12,7 @@
 #endif
 
 #ifndef _WIN32_WINNT		// Allow use of features specific to Windows XP or later.                   
-#define _WIN32_WINNT 0x0501	// Change this to the appropriate value to target other versions of Windows.
+#define _WIN32_WINNT WINVER	// Change this to the appropriate value to target other versions of Windows.
 #endif						
 
 #ifndef _WIN32_WINDOWS		// Allow use of features specific to Windows 98 or later.
@@ -33,6 +33,7 @@
 #include <shlobj.h>
 #include <MMsystem.h>
 #include <shlwapi.h>
+#include <commctrl.h>
 
 // C RunTime Header Files
 #include <stdlib.h>
@@ -40,3 +41,20 @@
 #include <memory.h>
 
 
+
+// common controls stuff
+/*
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(lib, "comctl32.lib")
+
+#ifndef BCM_SETSHIELD
+	#define BCM_SETSHIELD            (BCM_FIRST + 0x000C)
+#endif
+
+#ifndef Button_SetElevationRequiredState
+	#define Button_SetElevationRequiredState(hwnd, fRequired) \
+		(LRESULT)SNDMSG((hwnd), BCM_SETSHIELD, 0, (LPARAM)fRequired)
+#endif
+*/
