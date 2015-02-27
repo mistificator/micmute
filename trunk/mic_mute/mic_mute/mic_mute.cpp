@@ -22,7 +22,7 @@ UINT TrayMsg = 0;
 HMENU TrayMenu = NULL;
 INT ShowNotifications = 0;
 INT SoundSignal = 0;
-HICON IconBlack = 0, IconRed = 0;
+HICON IconBlack = 0, IconRed = 0, IconShield = 0;
 
 WNDPROC shortcut_edit_proc = NULL;
 UINT prev_code = 0;
@@ -53,6 +53,8 @@ BOOL CALLBACK		EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID 
 VOID				ReadIni(VOID);
 VOID				WriteIni(VOID);
 VOID				SetIcon(HWND, HICON);
+VOID				SetIcon(HMENU, UINT, HICON);
+HBITMAP				Icon2Bitmap(HICON, UINT);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
@@ -69,6 +71,8 @@ UINT SelectedDevice = 0;
 HANDLE SingleControl = NULL;
 int MicMode = MIC_MODE_STANDART;
 bool IsMuted = false;
+
+bool restart_with_admin_rights = false;
 
 BOOL CALLBACK EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID ctx)
 {
@@ -146,7 +150,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
-	HMODULE dsound = LoadLibrary(L"dsound.dll");
+//	InitCommonControls();
+
+	HMODULE dsound = LoadLibrary(_T("dsound.dll"));
 	DirectSoundCaptureEnumerateW_t DirectSoundCaptureEnumerate = (DirectSoundCaptureEnumerateW_t)GetProcAddress(dsound, "DirectSoundCaptureEnumerateW");
 
 	MSG msg;
@@ -189,6 +195,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
 	IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
+	IconShield = (HICON)LoadImage(GetModuleHandle(_T("user32")), MAKEINTRESOURCE(106), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CXSMICON), 0);
 
 	GetModuleFileName(NULL, szMediaPath, MAX_PATH);
 	PathRemoveFileSpec(szMediaPath);
@@ -224,9 +231,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MIC_MUTE));
 
-	MENUITEMINFO mii;
 	DevicesMenu = CreateMenu();
-
 	CoInitialize(NULL);
 	DirectSoundCaptureEnumerate(& EnumCallback, DevicesMenu);
 
@@ -247,7 +252,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		nid.uFlags |= NIF_INFO;
 		nid.dwInfoFlags |= NIIF_USER;
 	}
-	TCHAR _tip[] = L"MicMute";
+	TCHAR _tip[] = _T("MicMute");
 	StringCchCopy(nid.szTip, 128, _tip);
 	StringCchCopy(nid.szInfoTitle, 64, _tip);
 	TCHAR _tooltip_text[1024];
@@ -259,7 +264,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	TrayMenu = GetSubMenu(hmenu, 0);
 	SetMenuDefaultItem(TrayMenu, IDM_MUTE, 0);
 
-	mii.cbSize = sizeof(MENUITEMINFO);
+	MENUITEMINFO mii;
+	ZeroMemory(& mii, sizeof(mii));
+	mii.cbSize = sizeof(mii);
 	mii.fMask = MIIM_SUBMENU | MIIM_STRING;
 	mii.fType = MFT_STRING;
 	mii.hSubMenu = DevicesMenu;
@@ -270,7 +277,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	InsertMenuItem(GetMenu(AppHWnd), 2, TRUE, &mii);
 	InsertMenuItem(TrayMenu, 3, TRUE, &mii);
 	CheckMenuRadioItem(DevicesMenu, DEVICE_FIRST_ID, DEVICE_LAST_ID, SelectedDevice + DEVICE_FIRST_ID, MF_BYCOMMAND);
-	
+
+	if (!IsUserAnAdmin())
+	{
+		SetIcon(TrayMenu, IDM_AUTORUN, IconShield);
+	}
+
 	if (SavedVolume == 0)
 	{
 		SavedVolume = mixer_mic_in.GetVolume();
@@ -349,6 +361,23 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	FreeLibrary(dsound);
 
 	CloseHandle(SingleControl);
+
+	if (restart_with_admin_rights)
+	{
+		TCHAR cmd[1024];
+		GetModuleFileName(NULL, cmd, sizeof(cmd) / sizeof(cmd[0]));
+		SHELLEXECUTEINFO shExInfo = {0};
+		shExInfo.cbSize = sizeof(shExInfo);
+		shExInfo.fMask = SEE_MASK_DEFAULT;
+		shExInfo.hwnd = 0;
+		shExInfo.lpVerb = _T("runas");                
+		shExInfo.lpFile = cmd;							
+		shExInfo.lpParameters = NULL;                  
+		shExInfo.lpDirectory = NULL;
+		shExInfo.nShow = SW_SHOW;
+		shExInfo.hInstApp = 0;  
+		ShellExecuteEx(&shExInfo);
+	}
 
 	return (int) msg.wParam;
 }
@@ -673,8 +702,18 @@ VOID SoundSignalToggle(HWND hWnd)
 
 VOID AutorunToggle(HWND hWnd)
 {
+	if (!IsUserAnAdmin())
+	{
+		restart_with_admin_rights = true;
+		PostQuitMessage(0);
+		return;
+	}
+
+	TCHAR str[1024];
+	str[0] = _T('\0');
+
 	HKEY hKey;
-	RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS, & hKey);
+	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_ALL_ACCESS, & hKey);
 
 	DWORD _arun_state = 0;
 	HMENU menu = GetMenu(hWnd);
@@ -683,11 +722,19 @@ VOID AutorunToggle(HWND hWnd)
 	{
 		CheckMenuItem(menu, IDM_AUTORUN, _arun_state = MF_CHECKED);
 
+		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
+
+/*
 		LPCTSTR _cmd = GetCommandLine();
 		size_t _len;
 		StringCchLength(_cmd, STRSAFE_MAX_CCH, & _len);
 
-		RegSetValueEx(hKey, L"MicMute", 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
+		RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
+*/
+		StringCchCat(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /tr "));
+		StringCchCat(str, sizeof(str), GetCommandLine());
+		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+
 		Autorun = TRUE;
 	}
 	else
@@ -695,7 +742,11 @@ VOID AutorunToggle(HWND hWnd)
 		_arun_state = MF_UNCHECKED;
 		SoundSignal = FALSE;
 
-		RegDeleteValue(hKey, L"MicMute");
+		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
+
+		StringCchCat(str, sizeof(str), _T("/delete /tn MicMute /f"));
+		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+
 		Autorun = FALSE;
 	}
 	CheckMenuItem(TrayMenu, IDM_AUTORUN, _arun_state);	
@@ -881,24 +932,25 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 		{
-			SetWindowText(::GetDlgItem(hDlg, IDC_DONATE), L"1FNrZr7Y4hx4fpaWRwgHsUL8T2yRKe1Rm6");
+			SetWindowText(::GetDlgItem(hDlg, IDC_DONATE), _T("1FNrZr7Y4hx4fpaWRwgHsUL8T2yRKe1Rm6"));
+			SendMessage(::GetDlgItem(hDlg, IDC_DONATE), WM_SETFONT, (WPARAM) GetStockObject(SYSTEM_FIXED_FONT), (LPARAM)FALSE);
 			return (INT_PTR)TRUE;
 		}
 		break;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDC_MAIL)
 		{
-			ShellExecute(hDlg, L"open", L"mailto:mist.poryvaev@gmail.com?subject=MicMute", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), _T("mailto:mist.poryvaev@gmail.com?subject=MicMute"), NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDC_UPDATES)
 		{
-			ShellExecute(hDlg, L"open", L"https://sourceforge.net/projects/micmute", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), _T("https://sourceforge.net/projects/micmute"), NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDC_PAYPAL)
 		{
-			ShellExecute(hDlg, L"open", L"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XTQVLZEHNQ4E8", NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), _T("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XTQVLZEHNQ4E8"), NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
@@ -1182,4 +1234,33 @@ VOID SetIcon(HWND hwnd, HICON hIcon)
 		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 	}
+}
+
+HBITMAP	Icon2Bitmap(HICON icon, UINT sz)
+{
+	ICONINFO ii;
+	GetIconInfo(icon, &ii);
+
+	HDC hdcMem1 = CreateCompatibleDC(NULL);
+	HDC hdcMem2 = CreateCompatibleDC(NULL);
+	SelectObject(hdcMem1, ii.hbmColor);
+	SelectObject(hdcMem2, ii.hbmMask);
+	SetBkColor(hdcMem1, 0xffffff);
+	BitBlt(hdcMem1, 0, 0, sz, sz, hdcMem2, 0, 0, SRCINVERT);
+	DeleteDC(hdcMem1);
+	DeleteDC(hdcMem2);
+
+	return ii.hbmColor;
+}
+
+VOID SetIcon(HMENU menu, UINT id, HICON icon)
+{
+/*
+	ZeroMemory(& mii, sizeof(mii));
+	mii.cbSize = sizeof(mii);
+	mii.fMask = MIIM_BITMAP;
+	mii.hbmpItem = Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON));
+	SetMenuItemInfo(TrayMenu, IDM_ABOUT, FALSE, & mii);
+*/
+	SetMenuItemBitmaps(menu, id, MF_BITMAP | MF_BYCOMMAND, Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)), Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)));
 }
