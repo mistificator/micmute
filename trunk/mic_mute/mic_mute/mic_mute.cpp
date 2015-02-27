@@ -22,7 +22,7 @@ UINT TrayMsg = 0;
 HMENU TrayMenu = NULL;
 INT ShowNotifications = 0;
 INT SoundSignal = 0;
-HICON IconBlack = 0, IconRed = 0, IconShield = 0;
+HICON IconBlack = 0, IconRed = 0;
 
 WNDPROC shortcut_edit_proc = NULL;
 UINT prev_code = 0;
@@ -53,7 +53,7 @@ BOOL CALLBACK		EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID 
 VOID				ReadIni(VOID);
 VOID				WriteIni(VOID);
 VOID				SetIcon(HWND, HICON);
-VOID				SetIcon(HMENU, UINT, HICON);
+VOID				SetIcon(HMENU, UINT, UINT, LPCTSTR module = NULL);
 HBITMAP				Icon2Bitmap(HICON, UINT);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
@@ -195,7 +195,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
 	IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
-	IconShield = (HICON)LoadImage(GetModuleHandle(_T("user32")), MAKEINTRESOURCE(106), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CXSMICON), 0);
 
 	GetModuleFileName(NULL, szMediaPath, MAX_PATH);
 	PathRemoveFileSpec(szMediaPath);
@@ -280,8 +279,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	if (!IsUserAnAdmin())
 	{
-		SetIcon(TrayMenu, IDM_AUTORUN, IconShield);
+		SetIcon(GetMenu(AppHWnd), IDM_AUTORUN, 106, _T("user32"));
+		SetIcon(TrayMenu, IDM_AUTORUN, 106, _T("user32"));
 	}
+	SetIcon(TrayMenu, IDM_SHOW_MICMUTE, IDI_MIC_MUTE);
 
 	if (SavedVolume == 0)
 	{
@@ -322,7 +323,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		SoundSignalToggle(AppHWnd);
 	}
 
-	if (Autorun)
+	if (Autorun && IsUserAnAdmin())
 	{
 		AutorunToggle(AppHWnd);
 	}
@@ -1253,14 +1254,8 @@ HBITMAP	Icon2Bitmap(HICON icon, UINT sz)
 	return ii.hbmColor;
 }
 
-VOID SetIcon(HMENU menu, UINT id, HICON icon)
+VOID SetIcon(HMENU menu, UINT menu_id, UINT icon_id, LPCTSTR module)
 {
-/*
-	ZeroMemory(& mii, sizeof(mii));
-	mii.cbSize = sizeof(mii);
-	mii.fMask = MIIM_BITMAP;
-	mii.hbmpItem = Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON));
-	SetMenuItemInfo(TrayMenu, IDM_ABOUT, FALSE, & mii);
-*/
-	SetMenuItemBitmaps(menu, id, MF_BITMAP | MF_BYCOMMAND, Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)), Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)));
+	HICON icon = (HICON)LoadImage(GetModuleHandle(module), MAKEINTRESOURCE(icon_id), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CXSMICON), 0);
+	SetMenuItemBitmaps(menu, menu_id, MF_BITMAP | MF_BYCOMMAND, Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)), Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)));
 }
