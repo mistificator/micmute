@@ -711,7 +711,6 @@ VOID AutorunToggle(HWND hWnd)
 	}
 
 	TCHAR str[1024];
-	str[0] = _T('\0');
 
 	HKEY hKey;
 	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_ALL_ACCESS, & hKey);
@@ -723,6 +722,9 @@ VOID AutorunToggle(HWND hWnd)
 	{
 		CheckMenuItem(menu, IDM_AUTORUN, _arun_state = MF_CHECKED);
 
+		StringCchCopy(str, sizeof(str), _T("/delete /tn MicMute /f"));
+		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+
 		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
 
 /*
@@ -732,7 +734,7 @@ VOID AutorunToggle(HWND hWnd)
 
 		RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
 */
-		StringCchCat(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /tr "));
+		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /delay 0000:10 /tr "));
 		StringCchCat(str, sizeof(str), GetCommandLine());
 		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
@@ -745,7 +747,7 @@ VOID AutorunToggle(HWND hWnd)
 
 		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
 
-		StringCchCat(str, sizeof(str), _T("/delete /tn MicMute /f"));
+		StringCchCopy(str, sizeof(str), _T("/delete /tn MicMute /f"));
 		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
 		Autorun = FALSE;
