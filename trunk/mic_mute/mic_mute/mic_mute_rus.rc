@@ -27,8 +27,8 @@ LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,8,2
- PRODUCTVERSION 0,1,8,2
+ FILEVERSION 0,1,8,3
+ PRODUCTVERSION 0,1,8,3
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.8.2"
+            VALUE "FileVersion", "MicMute 0.1.8.3"
             VALUE "InternalName", "MicMute"
             VALUE "LegalCopyright", "© 2010-2015 Мист Порываев"
             VALUE "OriginalFilename", "mic_mute_rus.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.8.2"
+            VALUE "ProductVersion", "MicMute 0.1.8.3"
         END
     END
     BLOCK "VarFileInfo"
@@ -108,6 +108,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
         MENUITEM "Автозапуск при входе в систему", IDM_AUTORUN
+        MENUITEM "Проверять обновления при старте", 32794
     END
     POPUP "&Справка"
     BEGIN
@@ -132,6 +133,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Отключать микрофон при старте", IDM_START_MUTED
         MENUITEM "Автозапуск при входе в систему", IDM_AUTORUN
+        MENUITEM "Проверять обновления при старте", IDM_CHECKUPDATES
         MENUITEM SEPARATOR
         MENUITEM "Показать окно программы",     IDM_SHOW_MICMUTE
         MENUITEM "О программе ...",             IDM_ABOUT
@@ -163,7 +165,7 @@ CAPTION "О программе"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.8.2 Бета",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "MicMute",IDC_VERSION,49,5,119,8,SS_NOPREFIX
     LTEXT           "© 2010-2015 Мист Порываев",IDC_STATIC,49,15,119,8
     DEFPUSHBUTTON   "Принять",IDOK,189,5,37,11,WS_GROUP
     EDITTEXT        IDC_DONATE,50,54,176,14,ES_AUTOHSCROLL | ES_READONLY
@@ -263,6 +265,7 @@ BEGIN
     IDS_MICOFF2             "MicMute - микр. выкл."
     IDC_MIC_MUTE            "MIC_MUTE"
     IDS_MICON2              "MicMute - микр. вкл."
+    IDS_VERSION             "MicMute 0.1.8.3 Бета"
 END
 
 STRINGTABLE
@@ -274,6 +277,11 @@ BEGIN
     IDS_BADHOOK             "Библиотека key_hook.dll повреждена или не предоставляет требуемых функций"
     IDS_SELECT_AUDIO_FILE   "Выбрать звуковой файл"
     IDS_AUDIO_FILE_FILTER   "Wave файлы\n*.wav\nMp3 файлы\n*.mp3\nВсе файлы\n*.*\n\n"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_WENEEDTOUPDATE      "Щелкните здесь или выберите в меню ""О программе->Проверить обновления"", чтобы обновить MicMute"
 END
 
 #endif    // Russian (Russia) resources

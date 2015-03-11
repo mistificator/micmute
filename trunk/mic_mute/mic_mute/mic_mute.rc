@@ -27,8 +27,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,8,2
- PRODUCTVERSION 0,1,8,2
+ FILEVERSION 0,1,8,3
+ PRODUCTVERSION 0,1,8,3
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.8.2"
+            VALUE "FileVersion", "MicMute 0.1.8.3"
             VALUE "InternalName", "MicMute"
             VALUE "LegalCopyright", "© 2010-2015 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.8.2"
+            VALUE "ProductVersion", "MicMute 0.1.8.3"
         END
     END
     BLOCK "VarFileInfo"
@@ -108,6 +108,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Start muted",                 IDM_START_MUTED
         MENUITEM "Autorun on system logon",     IDM_AUTORUN
+        MENUITEM "Check for updates on start",  IDM_CHECKUPDATES
     END
     POPUP "&Help"
     BEGIN
@@ -132,6 +133,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Start muted",                 IDM_START_MUTED
         MENUITEM "Autorun on system logon",     IDM_AUTORUN
+        MENUITEM "Check for updates on start",  IDM_CHECKUPDATES
         MENUITEM SEPARATOR
         MENUITEM "Show MicMute window",         IDM_SHOW_MICMUTE
         MENUITEM "&About ...",                  IDM_ABOUT
@@ -163,7 +165,7 @@ CAPTION "About"
 FONT 10, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     ICON            IDI_MIC_MUTE,IDC_MYICON,14,9,20,20
-    LTEXT           "MicMute 0.1.8.2 Beta",IDC_STATIC,49,5,119,8,SS_NOPREFIX
+    LTEXT           "MicMute",IDC_VERSION,49,5,119,8,SS_NOPREFIX
     LTEXT           "© 2010-2015 Mist Poryvaev",IDC_STATIC,49,15,119,8
     DEFPUSHBUTTON   "Ok",IDOK,189,5,37,11,WS_GROUP
     EDITTEXT        IDC_DONATE,50,54,176,14,ES_AUTOHSCROLL | ES_READONLY
@@ -274,6 +276,7 @@ BEGIN
     IDS_MICOFF2             "MicMute - Mic Off"
     IDC_MIC_MUTE            "MIC_MUTE"
     IDS_MICON2              "MicMute - Mic On"
+    IDS_VERSION             "MicMute 0.1.8.3 Beta"
 END
 
 STRINGTABLE
@@ -285,6 +288,11 @@ BEGIN
     IDS_BADHOOK             "key_hook.dll is corrupted or doesn't provide requested functions"
     IDS_SELECT_AUDIO_FILE   "Select audio file"
     IDS_AUDIO_FILE_FILTER   "Wave files\n*.wav\nMp3 files\n*.mp3\nAll files\n*.*\n\n"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_WENEEDTOUPDATE      "Click here or go to menu ""About->Check for updates"" to update MicMute"
 END
 
 #endif    // Neutral (Default) resources

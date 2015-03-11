@@ -22,6 +22,8 @@
 #define IDC_MIC_MUTE                    109
 #define IDS_MICON2                      110
 #define IDI_SHORTCUT                    111
+#define IDS_VERSION                     111
+#define IDS_WENEEDTOUPDATE              112
 #define IDR_MAINFRAME                   128
 #define IDS_TRANSMWAR                   132
 #define IDS_INFOCAPTION                 133
@@ -38,6 +40,7 @@
 #define IDC_MIC_OFF                     1006
 #define IDC_PAYPAL                      1006
 #define IDC_MIC_ON                      1007
+#define IDC_VERSION                     1008
 #define IDM_MUTE                        32771
 #define IDC_TRAY_MIC_MUTE               32772
 #define IDM_SHOW_MICMUTE                32773
@@ -50,6 +53,7 @@
 #define IDM_SOUND_SIGNAL                32780
 #define IDM_AUTORUN                     32785
 #define IDM_SELECT_AUDIO_FILES          32793
+#define IDM_CHECKUPDATES                32794
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -58,8 +62,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        139
-#define _APS_NEXT_COMMAND_VALUE         32794
-#define _APS_NEXT_CONTROL_VALUE         1008
+#define _APS_NEXT_COMMAND_VALUE         32795
+#define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           112
 #endif
 #endif

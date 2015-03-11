@@ -35,6 +35,11 @@
 #include <shlwapi.h>
 #include <commctrl.h>
 
+#include <atlbase.h>
+#include "atlrx.h"
+#include <xmllite.h>
+#include <wininet.h>
+
 // C RunTime Header Files
 #include <stdlib.h>
 #include <malloc.h>
