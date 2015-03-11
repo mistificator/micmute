@@ -18,11 +18,19 @@ HINSTANCE hInst = NULL;								// current instance
 TCHAR szTitle[MAX_LOADSTRING] = _T("");					// The title bar text
 TCHAR szWindowClass[MAX_LOADSTRING] = _T("");			// the main window class name
 DWORD SavedVolume = 0;
+NOTIFYICONDATA nid;
 UINT TrayMsg = 0;
 HMENU TrayMenu = NULL;
 INT ShowNotifications = 0;
 INT SoundSignal = 0;
 HICON IconBlack = 0, IconRed = 0;
+BOOL WeNeedToUpdate = FALSE;
+TCHAR NewVersion[64];
+DWORD UpdateTipTimeout = 60001;
+
+TCHAR MailLink[] = _T("mailto:mist.poryvaev@gmail.com?subject=MicMute");
+TCHAR UpdatesLink[] = _T("https://sourceforge.net/projects/micmute");
+TCHAR PayPalLink[] = _T("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XTQVLZEHNQ4E8");
 
 WNDPROC shortcut_edit_proc = NULL;
 UINT prev_code = 0;
@@ -43,6 +51,7 @@ INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	SetupShortcut(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	SelectAudioFiles(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	ShortcutEditProc(HWND, UINT, WPARAM, LPARAM);
+VOID				CheckUpdatesToggle(HWND hWnd);
 VOID				MuteToggle(HWND hWnd);
 VOID				StartMutedToggle(HWND hWnd);
 VOID				TransmitterToggle(HWND hWnd);
@@ -55,6 +64,7 @@ VOID				WriteIni(VOID);
 VOID				SetIcon(HWND, HICON);
 VOID				SetIcon(HMENU, UINT, UINT, LPCTSTR module = NULL);
 HBITMAP				Icon2Bitmap(HICON, UINT);
+BOOL				CompareVersion(LPCTSTR v, LPTSTR new_v);
 
 CMixer mixer_mic_in(MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE, CMixer::Record);
 
@@ -67,6 +77,7 @@ HANDLE Thread = NULL;
 HWND AppHWnd = NULL;
 BOOL StartMuted = FALSE;
 BOOL Autorun = FALSE;
+BOOL CheckUpdates = FALSE;
 UINT SelectedDevice = 0;
 HANDLE SingleControl = NULL;
 int MicMode = MIC_MODE_STANDART;
@@ -150,6 +161,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		return 0;
 	}
 
+	while (WSAStartup(MAKEWORD(2, 0), NULL) == WSASYSNOTREADY)
+	{
+		Sleep(100);
+	}
+
 //	InitCommonControls();
 
 	HMODULE dsound = LoadLibrary(_T("dsound.dll"));
@@ -206,6 +222,86 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	ReadIni();
 
+	if (CheckUpdates)
+	if (HINTERNET ntrnt = InternetOpen(_T("MicMute"), INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0))
+	{
+		if (HINTERNET rss = InternetOpenUrl(ntrnt, _T("https://sourceforge.net/projects/micmute/rss"), NULL, -1, 0, NULL))
+		{
+			const DWORD xml_sz = 1024 * 1024;
+			LPSTR xml = (LPSTR)GlobalAlloc(GMEM_FIXED, xml_sz);
+			ZeroMemory(xml, sizeof(xml) / sizeof(xml[0]));
+			DWORD buf_sz = 0;
+			DWORD buf_offset = 0;
+			while (InternetQueryDataAvailable(rss, &buf_sz, 0, NULL) && buf_sz > 0 && buf_offset + buf_sz <= xml_sz)
+			{
+				INTERNET_BUFFERS buf;
+				ZeroMemory(& buf, sizeof(buf));
+				buf.dwStructSize = sizeof(buf);
+				buf.lpvBuffer = xml + buf_offset;
+				buf.dwBufferLength = buf_sz;
+				buf_offset += buf_sz;
+				InternetReadFileEx(rss, & buf, IRF_SYNC, NULL);
+			}
+			if (buf_offset > 0)
+			{
+				xml[buf_offset] = _T('\0');
+
+				CComPtr<IStream> stream;
+				CreateStreamOnHGlobal(xml, FALSE, &stream);
+
+				CComPtr<IXmlReader> reader;
+				CreateXmlReader(__uuidof(IXmlReader), (void**)&reader, NULL);
+				reader->SetInput(stream);
+				XmlNodeType nodeType;
+				BOOL is_item = FALSE, is_link = FALSE;
+				while (S_OK == reader->Read(&nodeType) && !WeNeedToUpdate) 
+				{
+					LPCTSTR node_name;
+					switch (nodeType)
+					{
+					case XmlNodeType_Element:
+						reader->GetQualifiedName(& node_name, NULL);
+						if (!is_item && StrCmp(node_name, _T("item")) == 0)
+						{
+							is_item = TRUE;
+						}
+						if (!is_link && is_item && StrCmp(node_name, _T("link")) == 0)
+						{
+							is_link = TRUE;
+						}
+						break;
+					case XmlNodeType_EndElement:
+						reader->GetQualifiedName(& node_name, NULL);
+						if (is_item && StrCmp(node_name, _T("item")) == 0)
+						{
+							is_item = FALSE;
+						}
+						if (is_link && StrCmp(node_name, _T("link")) == 0)
+						{
+							is_link = FALSE;
+						}
+						break;
+					case XmlNodeType_Text:
+						if (is_link)
+						{
+							LPCTSTR text = NULL;
+							reader->GetValue(& text, NULL);
+							if (CompareVersion(text, NewVersion))
+							{
+								WeNeedToUpdate = TRUE;
+							}
+						}
+						break;
+					}
+				}
+			}
+			GlobalFree(xml);
+			InternetCloseHandle(rss);
+		}
+		InternetCloseHandle(ntrnt);
+	}
+
+
 	// Initialize global strings
 	LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
 	LoadString(hInstance, IDC_MIC_MUTE, szWindowClass, MAX_LOADSTRING);
@@ -236,7 +332,6 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	mixer_mic_in.SelectDevice(SelectedDevice);
 
-	NOTIFYICONDATA nid;
 	ZeroMemory(&nid, sizeof(nid));
 	nid.cbSize = NOTIFYICONDATA_V2_SIZE;
 	nid.hWnd = AppHWnd;
@@ -255,7 +350,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	StringCchCopy(nid.szTip, 128, _tip);
 	StringCchCopy(nid.szInfoTitle, 64, _tip);
 	TCHAR _tooltip_text[1024];
-	LoadString(hInstance, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
+	LoadString(hInst, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
 	StringCchCopy(nid.szInfo, 256, _tooltip_text);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
@@ -333,6 +428,29 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		TransmitterToggle(AppHWnd);
 	}
 
+	if (CheckUpdates)
+	{
+		CheckUpdatesToggle(AppHWnd);
+	}
+
+	if (WeNeedToUpdate)
+	{
+		ZeroMemory(&nid, sizeof(nid));
+		nid.cbSize = NOTIFYICONDATA_V2_SIZE;
+
+		nid.hWnd = AppHWnd;
+		nid.uID = 1;
+		nid.uFlags = NIF_INFO;
+		nid.uTimeout = UpdateTipTimeout;
+		nid.dwInfoFlags = NIIF_INFO;
+		StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), _T("MicMute "));
+		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), NewVersion);
+		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), _T("!"));
+		LoadString(hInstance, IDS_WENEEDTOUPDATE, nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]));
+
+		Shell_NotifyIcon(NIM_MODIFY, &nid);
+	}
+
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
@@ -360,6 +478,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	FreeLibrary(hinstDLL);
 
 	FreeLibrary(dsound);
+
+	WSACleanup();
 
 	CloseHandle(SingleControl);
 
@@ -476,6 +596,8 @@ VOID ReadIni(VOID)
 	_stscanf(_str, _T("%i"), &_arun);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("SavedVolume"), _T("0"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &SavedVolume);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("CheckUpdates"), _T("1"), _str, 1024, szPath);
+	_stscanf(_str, _T("%i"), &CheckUpdates);
 
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnDefault, szMicOnSound, MAX_PATH, szPath);
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefault, szMicOffSound, MAX_PATH, szPath);
@@ -535,10 +657,30 @@ VOID WriteIni(VOID)
 	WritePrivateProfileString(_T("Mic_Mute"), _T("Autorun"), _str, szPath);
 	_stprintf(_str, _T("%i"), SavedVolume);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("SavedVolume"), _str, szPath);
+	_stprintf(_str, _T("%i"), CheckUpdates);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("CheckUpdates"), _str, szPath);
 
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnSound, szPath);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffSound, szPath);
 
+}
+
+VOID CheckUpdatesToggle(HWND hWnd)
+{
+	DWORD _check_state = 0;
+	HMENU menu = GetMenu(hWnd);
+	_check_state = CheckMenuItem(menu, IDM_CHECKUPDATES, MF_UNCHECKED);
+	if (_check_state == MF_UNCHECKED)
+	{
+		CheckMenuItem(menu, IDM_CHECKUPDATES, _check_state = MF_CHECKED);
+		CheckUpdates = TRUE;
+	}
+	else
+	{
+		_check_state = MF_UNCHECKED;
+		CheckUpdates = FALSE;
+	}
+	CheckMenuItem(TrayMenu, IDM_CHECKUPDATES, _check_state);	
 }
 
 VOID MuteToggle(HWND hWnd)
@@ -550,8 +692,9 @@ VOID MuteToggle(HWND hWnd)
 	mciSendString(_T("close MicOnSound"), NULL, 0, 0);			
 	mciSendString(_T("close MicOffSound"), NULL, 0, 0);			
 
-	NOTIFYICONDATA nid;
-	nid.cbSize = sizeof(nid);
+	ZeroMemory(&nid, sizeof(nid));
+	nid.cbSize = NOTIFYICONDATA_V2_SIZE;
+
 	nid.hWnd = AppHWnd;
 	nid.uID = 1;
 	nid.uFlags = NIF_TIP | NIF_ICON;
@@ -734,7 +877,7 @@ VOID AutorunToggle(HWND hWnd)
 
 		RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
 */
-		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /delay 0000:10 /tr "));
+		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /delay 0000:00 /tr "));
 		StringCchCat(str, sizeof(str), GetCommandLine());
 		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
@@ -821,24 +964,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	POINT pt;
 
-	if (message == TrayMsg)
-	{
-		switch ((UINT)lParam)
-		{
-		case WM_LBUTTONDBLCLK:
-			ShowWindow(hWnd, SW_SHOWNORMAL);
-			break;
-		case WM_RBUTTONDOWN:
-			GetCursorPos(&pt);
-			SetForegroundWindow(hWnd);
-			TrackPopupMenu(TrayMenu, 
-				TPM_LEFTALIGN, 
-				pt.x, pt.y, 0, hWnd, NULL); 
-			PostMessage(hWnd, WM_NULL, 0, 0);
-			break;
-		}
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
 	switch (message)
 	{
 	case WM_COMMAND:
@@ -883,6 +1008,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_AUTORUN:
 			AutorunToggle(hWnd);
 			break;
+		case IDM_CHECKUPDATES:
+			CheckUpdatesToggle(hWnd);
+			break;
 		case IDM_SETUP_SHORTCUT:
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
 			break;
@@ -896,6 +1024,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_CLOSE:
 		ShowWindow(hWnd, SW_HIDE);
+		return 0;
 		break;
 	case WM_PAINT:
 		{
@@ -922,9 +1051,58 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_KEYDOWN:
 		break;
 	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+		if (message == RegisterWindowMessage(_T("TaskbarCreated")))
+		{
+			ZeroMemory(&nid, sizeof(nid));
+			nid.cbSize = NOTIFYICONDATA_V2_SIZE;
+			nid.hWnd = AppHWnd;
+			nid.uID = 1;
+			nid.hIcon = IsMuted ? IconBlack : IconRed;
+			nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+			nid.uCallbackMessage = TrayMsg;
+			nid.uTimeout = 5000;
+			nid.dwInfoFlags = NIIF_NOSOUND;
+			if (ShowNotifications)
+			{
+				nid.uFlags |= NIF_INFO;
+				nid.dwInfoFlags |= NIIF_USER;
+			}
+			TCHAR _tip[] = _T("MicMute");
+			StringCchCopy(nid.szTip, 128, _tip);
+			StringCchCopy(nid.szInfoTitle, 64, _tip);
+			TCHAR _tooltip_text[1024];
+			LoadString(hInst, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
+			StringCchCopy(nid.szInfo, 256, _tooltip_text);
+			Shell_NotifyIcon(NIM_ADD, &nid);
+		}
+		else
+		if (message == TrayMsg)
+		{
+			switch ((UINT)lParam)
+			{
+			case WM_LBUTTONDBLCLK:
+				ShowWindow(hWnd, SW_SHOWNORMAL);
+				break;
+			case WM_RBUTTONDOWN:
+				GetCursorPos(&pt);
+				SetForegroundWindow(hWnd);
+				TrackPopupMenu(TrayMenu, 
+					TPM_LEFTALIGN, 
+					pt.x, pt.y, 0, hWnd, NULL); 
+				PostMessage(hWnd, WM_NULL, 0, 0);
+				break;
+			case NIN_BALLOONUSERCLICK:
+				if (WeNeedToUpdate && nid.uTimeout == UpdateTipTimeout)
+				{
+					ShellExecute(AppHWnd, _T("open"), UpdatesLink, NULL, NULL, SW_SHOWNORMAL);
+					WeNeedToUpdate = FALSE;
+				}
+				break;
+			}
+		}
+		break;
 	}
-	return 0;
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 // Message handler for about box.
@@ -935,6 +1113,9 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 		{
+			TCHAR ver[1024];
+			LoadString(hInst, IDS_VERSION, ver, sizeof(ver) / sizeof(ver[0]));
+			SetWindowText(::GetDlgItem(hDlg, IDC_VERSION), ver);
 			SetWindowText(::GetDlgItem(hDlg, IDC_DONATE), _T("1FNrZr7Y4hx4fpaWRwgHsUL8T2yRKe1Rm6"));
 			SendMessage(::GetDlgItem(hDlg, IDC_DONATE), WM_SETFONT, (WPARAM) GetStockObject(SYSTEM_FIXED_FONT), (LPARAM)FALSE);
 			return (INT_PTR)TRUE;
@@ -943,17 +1124,17 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDC_MAIL)
 		{
-			ShellExecute(hDlg, _T("open"), _T("mailto:mist.poryvaev@gmail.com?subject=MicMute"), NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), MailLink, NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDC_UPDATES)
 		{
-			ShellExecute(hDlg, _T("open"), _T("https://sourceforge.net/projects/micmute"), NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), UpdatesLink, NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDC_PAYPAL)
 		{
-			ShellExecute(hDlg, _T("open"), _T("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XTQVLZEHNQ4E8"), NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(hDlg, _T("open"), PayPalLink, NULL, NULL, SW_SHOWNORMAL);
 		}
 		else
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
@@ -1260,4 +1441,49 @@ VOID SetIcon(HMENU menu, UINT menu_id, UINT icon_id, LPCTSTR module)
 {
 	HICON icon = (HICON)LoadImage(GetModuleHandle(module), MAKEINTRESOURCE(icon_id), IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CXSMICON), 0);
 	SetMenuItemBitmaps(menu, menu_id, MF_BITMAP | MF_BYCOMMAND, Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)), Icon2Bitmap(icon, GetSystemMetrics(SM_CXSMICON)));
+}
+
+BOOL CompareVersion(LPCTSTR v, LPTSTR new_v = NULL)
+{
+	TCHAR ver[2][1024];
+	LoadString(hInst, IDS_VERSION, ver[0], sizeof(ver[0]) / sizeof(ver[0][0]));
+	StringCchCopy(ver[1], sizeof(ver[1]) / sizeof(ver[1][0]), v);
+
+	CAtlREMatchContext<> mc[2];
+	CAtlRegExp<> rx;
+	rx.Parse(_T("[0-9]\\.[0-9]\\.[0-9]\\.[0-9]"));
+
+	if (rx.Match(ver[0], & mc[0]) && rx.Match(ver[1], & mc[1]))
+	{
+		* ((LPTSTR)mc[0].m_Match.szEnd) = _T('\0');
+		* ((LPTSTR)mc[1].m_Match.szEnd) = _T('\0');
+
+		int v0[4], v1[4];
+		_stscanf(mc[0].m_Match.szStart, _T("%i.%i.%i.%i"), & v0[0], & v0[1], & v0[2], & v0[3]);
+		_stscanf(mc[1].m_Match.szStart, _T("%i.%i.%i.%i"), & v1[0], & v1[1], & v1[2], & v1[3]);
+
+		if (new_v)
+		{
+			StringCchCopy(new_v, 8, mc[1].m_Match.szStart);
+		}
+
+		if (v1[0] != v0[0])
+		{
+			return v1[0] > v0[0];
+		}
+		if (v1[1] != v0[1])
+		{
+			return v1[1] > v0[1];
+		}
+		if (v1[2] != v0[2])
+		{
+			return v1[2] > v0[2];
+		}
+		if (v1[3] != v0[3])
+		{
+			return v1[3] > v0[3];
+//			return TRUE;
+		}
+	}
+	return FALSE;
 }
