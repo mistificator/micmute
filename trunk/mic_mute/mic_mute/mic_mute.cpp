@@ -27,6 +27,8 @@ HICON IconBlack = 0, IconRed = 0;
 BOOL WeNeedToUpdate = FALSE;
 TCHAR NewVersion[64];
 DWORD UpdateTipTimeout = 60001;
+OSVERSIONINFO win_ver;
+BOOL InAbout = FALSE, InShortcut = FALSE, InSounds = FALSE;
 
 TCHAR MailLink[] = _T("mailto:mist.poryvaev@gmail.com?subject=MicMute");
 TCHAR UpdatesLink[] = _T("https://sourceforge.net/projects/micmute");
@@ -103,7 +105,7 @@ BOOL CALLBACK EnumCallback(LPGUID guid, LPCTSTR descr, LPCTSTR modname, LPVOID c
 		mii.hbmpChecked = NULL;
 		StringCchLength(descr, STRSAFE_MAX_CCH, & mii.cch);
 		mii.dwTypeData = new TCHAR[mii.cch + 1];
-		StringCchCopy(mii.dwTypeData, mii.cch + 1, descr);
+		StringCchCopy(mii.dwTypeData, mii.cch, descr);
 		InsertMenuItem(menu, _idx, TRUE, &mii);
 		if (SelectedDevice == (UINT)-1)
 		{
@@ -166,6 +168,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		Sleep(100);
 	}
 
+	ZeroMemory(& win_ver, sizeof(win_ver));
+	win_ver.dwOSVersionInfoSize = sizeof(win_ver);
+	GetVersionEx(& win_ver);
+
 //	InitCommonControls();
 
 	HMODULE dsound = LoadLibrary(_T("dsound.dll"));
@@ -214,11 +220,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	GetModuleFileName(NULL, szMediaPath, MAX_PATH);
 	PathRemoveFileSpec(szMediaPath);
-	StringCchCat(szMediaPath, MAX_PATH, _T("\\"));
-	StringCchCopy(szMicOnDefault, 1024, szMediaPath);
-	StringCchCat(szMicOnDefault, MAX_PATH, _T("beep750.wav"));
-	StringCchCopy(szMicOffDefault, 1024, szMediaPath);
-	StringCchCat(szMicOffDefault, MAX_PATH, _T("beep300.wav"));
+	StringCchCat(szMediaPath, sizeof(szMediaPath) / sizeof(szMediaPath[0]) - 1, _T("\\"));
+	StringCchCopy(szMicOnDefault, sizeof(szMicOnDefault) / sizeof(szMicOnDefault[0]) - 1, szMediaPath);
+	StringCchCat(szMicOnDefault, sizeof(szMicOnDefault) / sizeof(szMicOnDefault[0]) - 1, _T("beep750.wav"));
+	StringCchCopy(szMicOffDefault, sizeof(szMicOffDefault) / sizeof(szMicOffDefault[0]) - 1, szMediaPath);
+	StringCchCat(szMicOffDefault, sizeof(szMicOffDefault) / sizeof(szMicOffDefault[0]) - 1, _T("beep300.wav"));
 
 	ReadIni();
 
@@ -347,11 +353,11 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		nid.dwInfoFlags |= NIIF_USER;
 	}
 	TCHAR _tip[] = _T("MicMute");
-	StringCchCopy(nid.szTip, 128, _tip);
-	StringCchCopy(nid.szInfoTitle, 64, _tip);
+	StringCchCopy(nid.szTip, sizeof(nid.szTip) / sizeof(nid.szTip[0]) - 1, _tip);
+	StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, _tip);
 	TCHAR _tooltip_text[1024];
 	LoadString(hInst, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
-	StringCchCopy(nid.szInfo, 256, _tooltip_text);
+	StringCchCopy(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]) - 1, _tooltip_text);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
 	HMENU hmenu = LoadMenu(GetModuleHandle(NULL), MAKEINTRESOURCE(IDC_TRAY_MIC_MUTE));
@@ -443,9 +449,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		nid.uFlags = NIF_INFO;
 		nid.uTimeout = UpdateTipTimeout;
 		nid.dwInfoFlags = NIIF_INFO;
-		StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), _T("MicMute "));
-		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), NewVersion);
-		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]), _T("!"));
+		StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, _T("MicMute "));
+		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, NewVersion);
+		StringCchCat(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, _T("!"));
 		LoadString(hInstance, IDS_WENEEDTOUPDATE, nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]));
 
 		Shell_NotifyIcon(NIM_MODIFY, &nid);
@@ -562,9 +568,9 @@ VOID ReadIni(VOID)
 		NULL, 
 		0, 
 		szPath); 
-	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
+	StringCchCat(szPath, sizeof(szPath) / sizeof(szPath[0]) - 1, _T("\\MicMute"));
 	CreateDirectory(szPath, NULL);
-	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
+	StringCchCat(szPath, sizeof(szPath) / sizeof(szPath[0]) - 1, _T("\\mic_mute.ini"));
 
 	/*
 	if (GetFileAttributes(szPath) == INVALID_FILE_ATTRIBUTES)
@@ -603,15 +609,15 @@ VOID ReadIni(VOID)
 	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefault, szMicOffSound, MAX_PATH, szPath);
 
 	size_t _len;
-	StringCchLength(szMicOnSound, MAX_PATH, & _len);
+	StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 	if (_len == 0)
 	{
-		StringCchCopy(szMicOnSound, MAX_PATH, szMicOnDefault);
+		StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefault);
 	}
-	StringCchLength(szMicOffSound, MAX_PATH, & _len);
+	StringCchLength(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]), & _len);
 	if (_len == 0)
 	{
-		StringCchCopy(szMicOffSound, MAX_PATH, szMicOffDefault);
+		StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefault);
 	}
 
 	StartMuted = (_start_muted != 0);
@@ -627,9 +633,9 @@ VOID WriteIni(VOID)
 		NULL, 
 		0, 
 		szPath); 
-	StringCchCat(szPath, MAX_PATH, _T("\\MicMute"));
+	StringCchCat(szPath, sizeof(szPath) / sizeof(szPath[0]) - 1, _T("\\MicMute"));
 	CreateDirectory(szPath, NULL);
-	StringCchCat(szPath, MAX_PATH, _T("\\mic_mute.ini"));
+	StringCchCat(szPath, sizeof(szPath) / sizeof(szPath[0]) - 1, _T("\\mic_mute.ini"));
 
 	TCHAR _str[1024];
 	int _count, _key1, _key2, _start_muted, _arun;
@@ -706,7 +712,7 @@ VOID MuteToggle(HWND hWnd)
 		nid.dwInfoFlags |= NIIF_USER;
 	}
 	TCHAR _tooltip_title[] = _T("MicMute");
-	StringCchCopy(nid.szInfoTitle, 64, _tooltip_title);
+	StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, _tooltip_title);
 
 	FLASHWINFO flash;
 	flash.cbSize = sizeof(flash);
@@ -719,10 +725,10 @@ VOID MuteToggle(HWND hWnd)
 	{
 		TCHAR _tooltip_text[1024];
 		LoadString(hInst, IDS_MICOFF, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
-		StringCchCopy(nid.szInfo, 265, _tooltip_text);
+		StringCchCopy(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]) - 1, _tooltip_text);
 		TCHAR _tip[1024];
 		LoadString(hInst, IDS_MICOFF2, _tip, sizeof(_tip) / sizeof(_tip[0]));
-		StringCchCopy(nid.szTip, 128, _tip);
+		StringCchCopy(nid.szTip, sizeof(nid.szTip) / sizeof(nid.szTip[0]) - 1, _tip);
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		CheckMenuItem(menu, IDM_MUTE, mute_state = MF_CHECKED);
 		flash.dwFlags = FLASHW_TRAY;
@@ -730,12 +736,12 @@ VOID MuteToggle(HWND hWnd)
 		if (SoundSignal)
 		{
 			size_t _len = 0;
-			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 			TCHAR _open_str[1024];
 			_open_str[0] = _T('');
-			StringCchCat(_open_str, 1024, _T("open \""));
-			StringCchCat(_open_str, 1024, szMicOffSound);
-			StringCchCat(_open_str, 1024, _T("\" type mpegvideo alias MicOffSound"));
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, _T("open \""));
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, szMicOffSound);
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, _T("\" type mpegvideo alias MicOffSound"));
 			mciSendString(_open_str, NULL, 0, 0); 
 			mciSendString(_T("play MicOffSound"), NULL, 0, 0);
 		}
@@ -746,10 +752,10 @@ VOID MuteToggle(HWND hWnd)
 	{
 		TCHAR _tooltip_text[1024];
 		LoadString(hInst, IDS_MICON, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
-		StringCchCopy(nid.szInfo, 256, _tooltip_text);
+		StringCchCopy(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]) - 1, _tooltip_text);
 		TCHAR _tip[1024];
 		LoadString(hInst, IDS_MICON2, _tip, sizeof(_tip) / sizeof(_tip[0]));
-		StringCchCopy(nid.szTip, 128, _tip);
+		StringCchCopy(nid.szTip, sizeof(nid.szTip) / sizeof(nid.szTip[0]) - 1, _tip);
 		SetWindowText(hWnd, (LPTSTR)_tip);
 		mute_state = MF_UNCHECKED;
 		flash.dwFlags = FLASHW_STOP;
@@ -757,12 +763,12 @@ VOID MuteToggle(HWND hWnd)
 		if (SoundSignal)
 		{
 			size_t _len = 0;
-			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 			TCHAR _open_str[1024];
 			_open_str[0] = _T('');
-			StringCchCat(_open_str, 1024, _T("open \""));
-			StringCchCat(_open_str, 1024, szMicOnSound);
-			StringCchCat(_open_str, 1024, _T("\" type mpegvideo alias MicOnSound"));
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, _T("open \""));
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, szMicOnSound);
+			StringCchCat(_open_str, sizeof(_open_str) / sizeof(_open_str[0]) - 1, _T("\" type mpegvideo alias MicOnSound"));
 			mciSendString(_open_str, NULL, 0, 0); 
 			mciSendString(_T("play MicOnSound"), NULL, 0, 0);
 		}
@@ -857,6 +863,7 @@ VOID AutorunToggle(HWND hWnd)
 
 	HKEY hKey;
 	RegOpenKeyEx(HKEY_CURRENT_USER, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), 0, KEY_ALL_ACCESS, & hKey);
+	RegDeleteValue(hKey, _T("MicMute")); 
 
 	DWORD _arun_state = 0;
 	HMENU menu = GetMenu(hWnd);
@@ -865,31 +872,38 @@ VOID AutorunToggle(HWND hWnd)
 	{
 		CheckMenuItem(menu, IDM_AUTORUN, _arun_state = MF_CHECKED);
 
-		StringCchCopy(str, sizeof(str), _T("/delete /tn MicMute /f"));
-		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+		TCHAR _cmd[1024];
+		StringCchCopy(_cmd, sizeof(_cmd) / sizeof(_cmd[0]) - 1, GetCommandLine());
 
-		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
-
-/*
-		LPCTSTR _cmd = GetCommandLine();
 		size_t _len;
-		StringCchLength(_cmd, STRSAFE_MAX_CCH, & _len);
+		StringCchLength(_cmd, sizeof(_cmd) / sizeof(_cmd[0]), & _len);
+		while (_len > 1 && _cmd[_len - 1] == _T(' '))
+		{
+			_cmd[--_len] = _T('\0');
+		}
+		if (win_ver.dwMajorVersion < 6)
+		{
+			RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(_T('\0'))));
+		}
+		else
+		{
+			StringCchCopy(str, sizeof(str) / sizeof(str[0]) - 1, _T("/delete /tn MicMute /f"));
+			ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
-		RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
-*/
-		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /tr '"));
-		BOOL quote_is_needed = GetCommandLine()[0] != _T('\"');
-		if (quote_is_needed)
-		{
-			StringCchCat(str, sizeof(str), _T("\""));
+			StringCchCopy(str, sizeof(str) / sizeof(str[0]) - 1, _T("/create /sc onlogon /tn MicMute /rl highest /tr '"));
+			BOOL quote_is_needed =_cmd[0] != _T('\"');
+			if (quote_is_needed)
+			{
+				StringCchCat(str, sizeof(str) / sizeof(str[0]) - 1, _T("\""));
+			}
+			StringCchCat(str, sizeof(str) / sizeof(str[0]) - 1, _cmd);
+			if (quote_is_needed)
+			{
+				StringCchCat(str, sizeof(str) / sizeof(str[0]) - 1, _T("\""));
+			}
+			StringCchCat(str, sizeof(str) / sizeof(str[0]) - 1, _T("'"));
+			ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 		}
-		StringCchCat(str, sizeof(str), GetCommandLine());
-		if (quote_is_needed)
-		{
-			StringCchCat(str, sizeof(str), _T("\""));
-		}
-		StringCchCat(str, sizeof(str), _T("'"));
-		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
 		Autorun = TRUE;
 	}
@@ -898,10 +912,11 @@ VOID AutorunToggle(HWND hWnd)
 		_arun_state = MF_UNCHECKED;
 		SoundSignal = FALSE;
 
-		RegDeleteValue(hKey, _T("MicMute")); // for compatibility with 0.1.8.1 and older
-
-		StringCchCopy(str, sizeof(str), _T("/delete /tn MicMute /f"));
-		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+		if (win_ver.dwMajorVersion >= 6)
+		{
+			StringCchCopy(str, sizeof(str) / sizeof(str[0]) - 1, _T("/delete /tn MicMute /f"));
+			ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
+		}
 
 		Autorun = FALSE;
 	}
@@ -989,7 +1004,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			if (!InAbout)
+			{
+				InAbout = TRUE;
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			}
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
@@ -1022,10 +1041,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			CheckUpdatesToggle(hWnd);
 			break;
 		case IDM_SETUP_SHORTCUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
+			if (!InShortcut)
+			{
+				InShortcut = TRUE;
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
+			}
 			break;
 		case IDM_SELECT_AUDIO_FILES:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_SELECT_AUDIO_FILES), hWnd, SelectAudioFiles);
+			if (!InSounds)
+			{
+				InSounds = TRUE;
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_SELECT_AUDIO_FILES), hWnd, SelectAudioFiles);
+			}
 			break;
 		default:
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -1043,12 +1070,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if (IsMuted)
 			{
 				LoadString(hInst, IDS_MICOFF, _tip, sizeof(_tip) / sizeof(_tip[0]));
-				StringCchLength(_tip, STRSAFE_MAX_CCH, & _len);
+				StringCchLength(_tip, sizeof(_tip) / sizeof(_tip[0]), & _len);
 			}
 			else
 			{
 				LoadString(hInst, IDS_MICON, _tip, sizeof(_tip) / sizeof(_tip[0]));
-				StringCchLength(_tip, STRSAFE_MAX_CCH, & _len);
+				StringCchLength(_tip, sizeof(_tip) / sizeof(_tip[0]), & _len);
 			}
 			BeginPaint(hWnd, &ps);
 			TextOut(GetDC(hWnd), 0, 0, _tip, (int)_len);
@@ -1078,11 +1105,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				nid.dwInfoFlags |= NIIF_USER;
 			}
 			TCHAR _tip[] = _T("MicMute");
-			StringCchCopy(nid.szTip, 128, _tip);
-			StringCchCopy(nid.szInfoTitle, 64, _tip);
+			StringCchCopy(nid.szTip, sizeof(nid.szTip) / sizeof(nid.szTip[0]) - 1, _tip);
+			StringCchCopy(nid.szInfoTitle, sizeof(nid.szInfoTitle) / sizeof(nid.szInfoTitle[0]) - 1, _tip);
 			TCHAR _tooltip_text[1024];
 			LoadString(hInst, IDS_STARTED, _tooltip_text, sizeof(_tooltip_text) / sizeof(_tooltip_text[0]));
-			StringCchCopy(nid.szInfo, 256, _tooltip_text);
+			StringCchCopy(nid.szInfo, sizeof(nid.szInfo) / sizeof(nid.szInfo[0]) - 1, _tooltip_text);
 			Shell_NotifyIcon(NIM_ADD, &nid);
 		}
 		else
@@ -1150,6 +1177,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
 		{
 			EndDialog(hDlg, LOWORD(wParam));
+			InAbout = FALSE;
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -1175,6 +1203,7 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		{
 			EndDialog(hDlg, LOWORD(wParam));
 			SetEnabled(true);
+			InShortcut = FALSE;
 			return (INT_PTR)TRUE;
 		}
 		break;
@@ -1203,16 +1232,18 @@ INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			GetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF), szMicOffSound, MAX_PATH);
 
 			size_t _len;
-			StringCchLength(szMicOnSound, MAX_PATH, & _len);
+			StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 			if (_len == 0)
 			{
-				StringCchCopy(szMicOnSound, MAX_PATH, szMicOnDefault);
+				StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefault);
 			}
-			StringCchLength(szMicOffSound, MAX_PATH, & _len);
+			StringCchLength(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]), & _len);
 			if (_len == 0)
 			{
-				StringCchCopy(szMicOffSound, MAX_PATH, szMicOffDefault);
+				StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefault);
 			}
+
+			InSounds = FALSE;
 
 			return (INT_PTR)TRUE;
 		}
@@ -1378,13 +1409,13 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 			GetShortcut((int *)&_count, (int *)&prev_code, (int *)&_code);
 			if (_count == 1)
 			{
-				StringCchCopy(_key1, 32, KeyToName(prev_code));
+				StringCchCopy(_key1, sizeof(_key1) / sizeof(_key1[0]) - 1, KeyToName(prev_code));
 				StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
 			}
 			else
 			{
-				StringCchCopy(_key1, 32, KeyToName(prev_code));
-				StringCchCopy(_key2, 32, KeyToName(_code));
+				StringCchCopy(_key1, sizeof(_key1) / sizeof(_key1[0]) - 1, KeyToName(prev_code));
+				StringCchCopy(_key2, sizeof(_key2) / sizeof(_key2[0]) - 1, KeyToName(_code));
 				StringCbPrintf(_str, sizeof(_str), _T("%s + %s"), _key1, _key2);
 			}
 			SetWindowText(hEdit, _str);
@@ -1396,14 +1427,14 @@ LRESULT CALLBACK ShortcutEditProc(HWND hEdit, UINT message, WPARAM wParam, LPARA
 		_code = GetVkCode();
 		if ((prev_code == 0) || (prev_code == _code) || (MicMode == MIC_MODE_TRANSMITTER))
 		{
-			StringCchCopy(_key1, 32, KeyToName(_code));
+			StringCchCopy(_key1, sizeof(_key1) / sizeof(_key1[0]) - 1, KeyToName(_code));
 			StringCbPrintf(_str, sizeof(_str), _T("%s"), _key1);
 			SetShortcut(1, _code, 0);
 		}
 		else 
 		{
-			StringCchCopy(_key1, 32, KeyToName(prev_code));
-			StringCchCopy(_key2, 32, KeyToName(_code));
+			StringCchCopy(_key1, sizeof(_key1) / sizeof(_key1[0]) - 1, KeyToName(prev_code));
+			StringCchCopy(_key2, sizeof(_key2) / sizeof(_key2[0]) - 1, KeyToName(_code));
 			StringCbPrintf(_str, sizeof(_str), _T("%s + %s"), _key1, _key2);
 			SetShortcut(2, prev_code, _code);
 		}
@@ -1457,7 +1488,7 @@ BOOL CompareVersion(LPCTSTR v, LPTSTR new_v = NULL)
 {
 	TCHAR ver[2][1024];
 	LoadString(hInst, IDS_VERSION, ver[0], sizeof(ver[0]) / sizeof(ver[0][0]));
-	StringCchCopy(ver[1], sizeof(ver[1]) / sizeof(ver[1][0]), v);
+	StringCchCopy(ver[1], sizeof(ver[1]) / sizeof(ver[1][0]) - 1, v);
 
 	CAtlREMatchContext<> mc[2];
 	CAtlRegExp<> rx;
