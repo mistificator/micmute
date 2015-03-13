@@ -877,8 +877,18 @@ VOID AutorunToggle(HWND hWnd)
 
 		RegSetValueEx(hKey, _T("MicMute"), 0, REG_SZ, (BYTE *)_cmd, (DWORD)(_len * sizeof(_cmd[0]) + sizeof(L'\0')));
 */
-		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /delay 0000:00 /tr "));
+		StringCchCopy(str, sizeof(str), _T("/create /sc onlogon /tn MicMute /rl highest /tr '"));
+		BOOL quote_is_needed = GetCommandLine()[0] != _T('\"');
+		if (quote_is_needed)
+		{
+			StringCchCat(str, sizeof(str), _T("\""));
+		}
 		StringCchCat(str, sizeof(str), GetCommandLine());
+		if (quote_is_needed)
+		{
+			StringCchCat(str, sizeof(str), _T("\""));
+		}
+		StringCchCat(str, sizeof(str), _T("'"));
 		ShellExecute(NULL, _T("open"), _T("schtasks"), str, NULL, SW_HIDE);
 
 		Autorun = TRUE;

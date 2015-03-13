@@ -27,8 +27,8 @@ LANGUAGE LANG_NEUTRAL, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,8,3
- PRODUCTVERSION 0,1,8,3
+ FILEVERSION 0,1,8,4
+ PRODUCTVERSION 0,1,8,4
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -45,12 +45,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "mist.poryvaev@gmail.com"
             VALUE "FileDescription", "MicMute"
-            VALUE "FileVersion", "MicMute 0.1.8.3"
+            VALUE "FileVersion", "MicMute 0.1.8.4"
             VALUE "InternalName", "MicMute"
             VALUE "LegalCopyright", "© 2010-2015 Mist Poryvaev"
             VALUE "OriginalFilename", "mic_mute.exe"
             VALUE "ProductName", "MicMute"
-            VALUE "ProductVersion", "MicMute 0.1.8.3"
+            VALUE "ProductVersion", "MicMute 0.1.8.4"
         END
     END
     BLOCK "VarFileInfo"
@@ -276,7 +276,7 @@ BEGIN
     IDS_MICOFF2             "MicMute - Mic Off"
     IDC_MIC_MUTE            "MIC_MUTE"
     IDS_MICON2              "MicMute - Mic On"
-    IDS_VERSION             "MicMute 0.1.8.3 Beta"
+    IDS_VERSION             "MicMute 0.1.8.4 Beta"
 END
 
 STRINGTABLE
