@@ -42,41 +42,53 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeNameRus}"; Languages: r
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 
-[Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run\{#MyAppExeName}"; Flags: deletekey
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run\{#MyAppExeNameRus}"; Flags: deletekey
-
 [Tasks]
 Name: autorun; Description: "{cm:AutoStartProgram,{#StringChange(MyAppName, '&', '&&')}}"; GroupDescription: "{cm:AutoStartProgramGroupDescription}"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "MicMute"; Flags: deletevalue; MinVersion: 6.0
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueName: "MicMute"; Check: not IsTaskSelected('autorun'); Flags: deletevalue; OnlyBelowVersion: 6.0
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MicMute"; ValueData: "{app}\{#MyAppExeName}"; Check: IsTaskSelected('autorun'); Flags: deletevalue; OnlyBelowVersion: 6.0; Languages: english
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "MicMute"; ValueData: "{app}\{#MyAppExeNameRus}"; Check: IsTaskSelected('autorun'); Flags: deletevalue; OnlyBelowVersion: 6.0; Languages: russian
 
 [INI]
 Filename: "{localappdata}\{#MyAppName}\mic_mute.ini"; Section: "Mic_Mute"; Key: "Autorun"; String: "0"; Check: not IsTaskSelected('autorun')
 Filename: "{localappdata}\{#MyAppName}\mic_mute.ini"; Section: "Mic_Mute"; Key: "Autorun"; String: "1"; Check: IsTaskSelected('autorun')
 
 [Run]
-Filename: "schtasks"; Description: "Scheduling autorun task"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeName}""'"; Flags: runhidden; Tasks: autorun; Languages: english
+Filename: "schtasks"; Description: "Scheduling autorun task"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeName}""'"; Flags: runhidden; Tasks: autorun; MinVersion: 6.0; Languages: english
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Languages: english
 
-Filename: "schtasks"; Description: "Настройка автозапуска в планировщике задач"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeNameRus}""'"; Flags: runhidden; Tasks: autorun; Languages: russian
+Filename: "schtasks"; Description: "Настройка автозапуска в планировщике задач"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeNameRus}""'"; Flags: runhidden; Tasks: autorun; MinVersion: 6.0; Languages: russian
 Filename: "{app}\{#MyAppExeNameRus}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Languages: russian
 
 [Code]
 function InitializeSetup: Boolean;
 var
   ResultCode: Integer;
+  Version: TWindowsVersion;
 begin
+  GetWindowsVersionEx(Version);
   Exec('taskkill', '/t /f /im "' + ExpandConstant('{#MyAppExeName}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill', '/t /f /im "' + ExpandConstant('{#MyAppExeNameRus}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('schtasks', '/delete /tn MicMute /f', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if (Version.Major >= 6) then
+  begin
+    Exec('schtasks', '/delete /tn MicMute /f', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
   result := true;
 end;
 
 function InitializeUninstall(): Boolean;
 var
   ResultCode: Integer;
+  Version: TWindowsVersion;
 begin
+  GetWindowsVersionEx(Version);
   Exec('taskkill', '/t /f /im "' + ExpandConstant('{#MyAppExeName}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Exec('taskkill', '/t /f /im "' + ExpandConstant('{#MyAppExeNameRus}') + '"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('schtasks', '/delete /tn MicMute /f', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if (Version.Major >= 6) then
+  begin
+    Exec('schtasks', '/delete /tn MicMute /f', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
   result := true;
 end;
