@@ -54,10 +54,10 @@ Filename: "{localappdata}\{#MyAppName}\mic_mute.ini"; Section: "Mic_Mute"; Key: 
 Filename: "{localappdata}\{#MyAppName}\mic_mute.ini"; Section: "Mic_Mute"; Key: "Autorun"; String: "1"; Check: IsTaskSelected('autorun')
 
 [Run]
-Filename: "schtasks"; Description: "Scheduling autorun task"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /delay 0000:00 /tr ""{app}\{#MyAppExeName}"""; Flags: runhidden; Tasks: autorun; Languages: english
+Filename: "schtasks"; Description: "Scheduling autorun task"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeName}""'"; Flags: runhidden; Tasks: autorun; Languages: english
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Languages: english
 
-Filename: "schtasks"; Description: "Настройка автозапуска в планировщике задач"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /delay 0000:00 /tr ""{app}\{#MyAppExeNameRus}"""; Flags: runhidden; Tasks: autorun; Languages: russian
+Filename: "schtasks"; Description: "Настройка автозапуска в планировщике задач"; Parameters: "/create /sc onlogon /tn MicMute /rl highest /tr '""{app}\{#MyAppExeNameRus}""'"; Flags: runhidden; Tasks: autorun; Languages: russian
 Filename: "{app}\{#MyAppExeNameRus}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Languages: russian
 
 [Code]
