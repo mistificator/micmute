@@ -37,9 +37,11 @@ TCHAR PayPalLink[] = _T("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hos
 WNDPROC shortcut_edit_proc = NULL;
 UINT prev_code = 0;
 
-TCHAR szMicOnSound[MAX_PATH];
-TCHAR szMicOffSound[MAX_PATH];
-TCHAR szMediaPath[MAX_PATH], szMicOnDefault[1024], szMicOffDefault[1024];
+TCHAR szMediaPath[MAX_PATH];
+TCHAR szMicOnSound[MAX_PATH], szMicOffSound[MAX_PATH];
+TCHAR szMicOnDefaultSound[1024], szMicOffDefaultSound[1024];
+TCHAR szMicOnIcon[MAX_PATH], szMicOffIcon[MAX_PATH];
+TCHAR szMicOnDefaultIcon[1024], szMicOffDefaultIcon[1024];
 
 HMENU DevicesMenu = NULL;
 #define DEVICE_FIRST_ID 50000
@@ -51,7 +53,7 @@ BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	SetupShortcut(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK	SelectAudioFiles(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	SelectMediaFiles(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK	ShortcutEditProc(HWND, UINT, WPARAM, LPARAM);
 VOID				CheckUpdatesToggle(HWND hWnd);
 VOID				MuteToggle(HWND hWnd);
@@ -146,6 +148,14 @@ DWORD WINAPI ThreadProc( LPVOID lpParam )
 	return 0;
 }
 
+BOOL FileExists(LPCTSTR szPath)
+{
+  DWORD dwAttrib = GetFileAttributes(szPath);
+
+  return (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+         !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
@@ -215,16 +225,20 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	hhook = SetWindowsHookEx(WH_KEYBOARD_LL,hLLKeybProc,hinstDLL,NULL); 
 	HookEvent = CreateEvent(NULL, TRUE, FALSE, _T("Hooked!"));
 
-	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE));
+	IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_GRAY));
 	IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
 
 	GetModuleFileName(NULL, szMediaPath, MAX_PATH);
 	PathRemoveFileSpec(szMediaPath);
 	StringCchCat(szMediaPath, sizeof(szMediaPath) / sizeof(szMediaPath[0]) - 1, _T("\\"));
-	StringCchCopy(szMicOnDefault, sizeof(szMicOnDefault) / sizeof(szMicOnDefault[0]) - 1, szMediaPath);
-	StringCchCat(szMicOnDefault, sizeof(szMicOnDefault) / sizeof(szMicOnDefault[0]) - 1, _T("beep750.wav"));
-	StringCchCopy(szMicOffDefault, sizeof(szMicOffDefault) / sizeof(szMicOffDefault[0]) - 1, szMediaPath);
-	StringCchCat(szMicOffDefault, sizeof(szMicOffDefault) / sizeof(szMicOffDefault[0]) - 1, _T("beep300.wav"));
+	StringCchCopy(szMicOnDefaultSound, sizeof(szMicOnDefaultSound) / sizeof(szMicOnDefaultSound[0]) - 1, szMediaPath);
+	StringCchCat(szMicOnDefaultSound, sizeof(szMicOnDefaultSound) / sizeof(szMicOnDefaultSound[0]) - 1, _T("beep750.wav"));
+	StringCchCopy(szMicOffDefaultSound, sizeof(szMicOffDefaultSound) / sizeof(szMicOffDefaultSound[0]) - 1, szMediaPath);
+	StringCchCat(szMicOffDefaultSound, sizeof(szMicOffDefaultSound) / sizeof(szMicOffDefaultSound[0]) - 1, _T("beep300.wav"));
+	StringCchCopy(szMicOnDefaultIcon, sizeof(szMicOnDefaultIcon) / sizeof(szMicOnDefaultIcon[0]) - 1, szMediaPath);
+	StringCchCat(szMicOnDefaultIcon, sizeof(szMicOnDefaultIcon) / sizeof(szMicOnDefaultIcon[0]) - 1, _T("mic_mute_red.ico"));
+	StringCchCopy(szMicOffDefaultIcon, sizeof(szMicOffDefaultIcon) / sizeof(szMicOffDefaultIcon[0]) - 1, szMediaPath);
+	StringCchCat(szMicOffDefaultIcon, sizeof(szMicOffDefaultIcon) / sizeof(szMicOffDefaultIcon[0]) - 1, _T("mic_mute_gray.wav"));
 
 	ReadIni();
 
@@ -605,19 +619,42 @@ VOID ReadIni(VOID)
 	GetPrivateProfileString(_T("Mic_Mute"), _T("CheckUpdates"), _T("1"), _str, 1024, szPath);
 	_stscanf(_str, _T("%i"), &CheckUpdates);
 
-	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnDefault, szMicOnSound, MAX_PATH, szPath);
-	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefault, szMicOffSound, MAX_PATH, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnDefaultSound, szMicOnSound, MAX_PATH, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffDefaultSound, szMicOffSound, MAX_PATH, szPath);
 
 	size_t _len;
 	StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 	if (_len == 0)
 	{
-		StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefault);
+		StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefaultSound);
 	}
 	StringCchLength(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]), & _len);
 	if (_len == 0)
 	{
-		StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefault);
+		StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefaultSound);
+	}
+
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOnIcon"), szMicOnDefaultIcon, szMicOnIcon, MAX_PATH, szPath);
+	GetPrivateProfileString(_T("Mic_Mute"), _T("MicOffIcon"), szMicOffDefaultIcon, szMicOffIcon, MAX_PATH, szPath);
+
+	StringCchLength(szMicOnIcon, sizeof(szMicOnIcon) / sizeof(szMicOnIcon[0]), & _len);
+	if (_len == 0)
+	{
+		StringCchCopy(szMicOnIcon, sizeof(szMicOnIcon) / sizeof(szMicOnIcon[0]) - 1, szMicOnDefaultIcon);
+	}
+	if (FileExists(szMicOnIcon))
+	{
+		IconRed = (HICON)LoadImage(hInst, szMicOnIcon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);		
+	}
+
+	StringCchLength(szMicOffIcon, sizeof(szMicOffIcon) / sizeof(szMicOffIcon[0]), & _len);
+	if (_len == 0)
+	{
+		StringCchCopy(szMicOffIcon, sizeof(szMicOffIcon) / sizeof(szMicOffIcon[0]) - 1, szMicOffDefaultIcon);
+	}
+	if (FileExists(szMicOffIcon))
+	{
+		IconBlack = (HICON)LoadImage(hInst, szMicOffIcon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
 	}
 
 	StartMuted = (_start_muted != 0);
@@ -668,7 +705,8 @@ VOID WriteIni(VOID)
 
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOnSound"), szMicOnSound, szPath);
 	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOffSound"), szMicOffSound, szPath);
-
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOnIcon"), szMicOnIcon, szPath);
+	WritePrivateProfileString(_T("Mic_Mute"), _T("MicOffIcon"), szMicOffIcon, szPath);
 }
 
 VOID CheckUpdatesToggle(HWND hWnd)
@@ -1047,11 +1085,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				DialogBox(hInst, MAKEINTRESOURCE(IDD_SETUP_SHORTCUT), hWnd, SetupShortcut);
 			}
 			break;
-		case IDM_SELECT_AUDIO_FILES:
+		case IDM_SELECT_MEDIA_FILES:
 			if (!InSounds)
 			{
 				InSounds = TRUE;
-				DialogBox(hInst, MAKEINTRESOURCE(IDD_SELECT_AUDIO_FILES), hWnd, SelectAudioFiles);
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_SELECT_MEDIA_FILES), hWnd, SelectMediaFiles);
 			}
 			break;
 		default:
@@ -1212,7 +1250,7 @@ INT_PTR CALLBACK SetupShortcut(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	return (INT_PTR)FALSE;
 }
 
-INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK SelectMediaFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {	
 	switch (message)
 	{
@@ -1222,6 +1260,10 @@ INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 	case WM_SHOWWINDOW:
 		SetWindowText(GetDlgItem(hDlg, IDC_MIC_ON), szMicOnSound);		
 		SetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF), szMicOffSound);		
+		SetWindowText(GetDlgItem(hDlg, IDC_MIC_ON_ICON), szMicOnIcon);		
+		SetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF_ICON), szMicOffIcon);		
+		SetIcon(GetDlgItem(hDlg, IDC_ICON_ON), IconRed);
+		SetIcon(GetDlgItem(hDlg, IDC_ICON_OFF), IconBlack);		
 		break;
 	case WM_COMMAND:
 		if ((LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL))
@@ -1235,13 +1277,44 @@ INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			StringCchLength(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]), & _len);
 			if (_len == 0)
 			{
-				StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefault);
+				StringCchCopy(szMicOnSound, sizeof(szMicOnSound) / sizeof(szMicOnSound[0]) - 1, szMicOnDefaultSound);
 			}
 			StringCchLength(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]), & _len);
 			if (_len == 0)
 			{
-				StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefault);
+				StringCchCopy(szMicOffSound, sizeof(szMicOffSound) / sizeof(szMicOffSound[0]) - 1, szMicOffDefaultSound);
 			}
+
+			GetWindowText(GetDlgItem(hDlg, IDC_MIC_ON_ICON), szMicOnIcon, MAX_PATH);
+			GetWindowText(GetDlgItem(hDlg, IDC_MIC_OFF_ICON), szMicOffIcon, MAX_PATH);
+
+			StringCchLength(szMicOnIcon, sizeof(szMicOnIcon) / sizeof(szMicOnIcon[0]), & _len);
+			if (_len == 0)
+			{
+				StringCchCopy(szMicOnIcon, sizeof(szMicOnIcon) / sizeof(szMicOnIcon[0]) - 1, szMicOnDefaultIcon);
+			}
+			if (FileExists(szMicOnIcon))
+			{
+				IconRed = (HICON)LoadImage(hInst, szMicOnIcon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);												
+			}
+			else
+			{
+				IconRed = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_RED));
+			}
+
+			StringCchLength(szMicOffIcon, sizeof(szMicOffIcon) / sizeof(szMicOffIcon[0]), & _len);
+			if (_len == 0)
+			{
+				StringCchCopy(szMicOffIcon, sizeof(szMicOffIcon) / sizeof(szMicOffIcon[0]) - 1, szMicOffDefaultIcon);
+			}
+			if (FileExists(szMicOffIcon))
+			{
+				IconBlack = (HICON)LoadImage(hInst, szMicOffIcon, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);												
+			}
+			else
+			{
+				IconBlack = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MIC_MUTE_GRAY));
+			}						
 
 			InSounds = FALSE;
 
@@ -1270,9 +1343,49 @@ INT_PTR CALLBACK SelectAudioFiles(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 			ofn.nMaxFile = MAX_PATH;
 			ofn.lpstrTitle = _title;
 			ofn.Flags = OFN_FILEMUSTEXIST;
-			if (GetOpenFileName(& ofn))
+			if (GetOpenFileName(& ofn) && FileExists(_filename))
 			{
 				SetWindowText(GetDlgItem(hDlg, LOWORD(wParam) == ID_MIC_ON_BROWSE ? IDC_MIC_ON : IDC_MIC_OFF), _filename);	
+			}
+		}
+		else
+		if (LOWORD(wParam) == ID_MIC_ON_ICON_BROWSE || LOWORD(wParam) == ID_MIC_OFF_ICON_BROWSE)
+		{
+			TCHAR _filename[MAX_PATH], _filefilter[1024], _title[1024];
+			LoadString(hInst, IDS_ICON_FILE_FILTER, _filefilter, sizeof(_filefilter) / sizeof(_filefilter[0]));
+			for (int i = 0; i < sizeof(_filefilter) / sizeof(_filefilter[0]); i++)
+			{
+				if (_filefilter[i] == _T('\n'))
+				{
+					_filefilter[i] = _T('\0');
+				}
+			}
+			LoadString(hInst, IDS_SELECT_ICON_FILE, _title, sizeof(_title) / sizeof(_title[0]));
+			GetWindowText(GetDlgItem(hDlg, LOWORD(wParam) == ID_MIC_ON_ICON_BROWSE ? IDC_MIC_ON_ICON : IDC_MIC_OFF_ICON), _filename, MAX_PATH);
+			OPENFILENAME ofn;
+			ZeroMemory(& ofn, sizeof(OPENFILENAME));
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = _filefilter;
+			ofn.lpstrFile = _filename;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.lpstrTitle = _title;
+			ofn.Flags = OFN_FILEMUSTEXIST;
+			if (GetOpenFileName(& ofn) && FileExists(_filename))
+			{
+				SetWindowText(GetDlgItem(hDlg, LOWORD(wParam) == ID_MIC_ON_ICON_BROWSE ? IDC_MIC_ON_ICON : IDC_MIC_OFF_ICON), _filename);
+				if (LOWORD(wParam) == ID_MIC_ON_ICON_BROWSE)
+				{
+					IconRed = (HICON)LoadImage(hInst, _filename, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);								
+					SetIcon(GetDlgItem(hDlg, IDC_ICON_ON), IconRed);
+				}
+				else
+				{
+					IconBlack = (HICON)LoadImage(hInst, _filename, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);			
+					SetIcon(GetDlgItem(hDlg, IDC_ICON_OFF), IconBlack);					
+				}
+				MuteToggle(AppHWnd);
+				MuteToggle(AppHWnd);
 			}
 		}
 		break;
@@ -1458,6 +1571,7 @@ VOID SetIcon(HWND hwnd, HICON hIcon)
 		SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
 		SendMessage(GetWindow(hwnd, GW_OWNER), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		SendMessage(hwnd, STM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
 	}
 }
 

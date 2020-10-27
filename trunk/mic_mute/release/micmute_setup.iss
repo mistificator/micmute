@@ -34,7 +34,10 @@ Source: ".\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Languages: 
 Source: ".\{#MyAppExeNameRus}"; DestDir: "{app}"; Flags: ignoreversion; Languages: russian
 Source: ".\beep300.wav"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\beep750.wav"; DestDir: "{app}"; Flags: ignoreversion
-; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+Source: ".\mic_mute.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\mic_mute_red.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\mic_mute_green.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\mic_mute_gray.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Languages: english
